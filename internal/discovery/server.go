@@ -95,16 +95,11 @@ func handleMessage(msg Message, response *registryResponse, registry *Registry) 
 			response.Code = 1
 			response.Message = "Data does not match type"
 		}
-
-		_, exist := registry.Services[registerServerMessage.Path]
-		if exist {
+		if err := registry.RegisterService(registerServerMessage); err != nil {
 			response.Code = 1
 			response.Message = fmt.Sprintf(`service with path "%v" already exists in registry`, registerServerMessage.Path)
 			break
 		}
-		mutex.Lock()
-		registry.Services[registerServerMessage.Path] = ServiceInfo{timeCreated: time.Now(), serverName: registerServerMessage.ServerName, path: registerServerMessage.Path, address: registerServerMessage.Address}
-		mutex.Unlock()
 	default:
 		fmt.Println(msg)
 		response.Code = 1

@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -20,4 +21,15 @@ type ServiceInfo struct {
 }
 
 
+func (r *Registry) RegisterService(msg registerServiceMessage) error {
 
+		_, exist := r.Services[msg.Path]
+		if exist {
+			return fmt.Errorf("service already exists")
+		}
+		mutex.Lock()
+		r.Services[msg.Path] = ServiceInfo{timeCreated: time.Now(), serverName: msg.ServerName, path: msg.Path, address: msg.Address}
+		mutex.Unlock()
+
+		return nil
+}
