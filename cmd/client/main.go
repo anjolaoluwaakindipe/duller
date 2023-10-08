@@ -40,15 +40,13 @@ func main() {
 
 	jsonMessage, _ := json.Marshal(message)
 
-	for {
-		_, err = conn.Write(jsonMessage)
-		if err != nil {
-			fmt.Println("Error sending JSON message to server:", err)
-			return
-		}
-
-		decoder, _ := io.ReadAll(conn)
-
-		fmt.Println("Sent JSON message to server:", string(decoder))
+	_, err = conn.Write(jsonMessage)
+	if err != nil {
+		fmt.Println("Error sending JSON message to server:", err)
+		return
 	}
+
+	decoder, _ := io.ReadAll(conn)
+
+	fmt.Println("Sent JSON message to server:", string(decoder))
 }

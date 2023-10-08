@@ -3,7 +3,7 @@ package discovery
 type Message map[string]interface{}
 
 const (
-	registerServiceMsg = "registerServericeMsg"
+	registerServiceMsg = "registerServiceMsg"
 )
 
 type registerServiceMessage struct {

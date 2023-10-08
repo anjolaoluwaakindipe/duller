@@ -17,7 +17,7 @@ type RegistrySettings struct {
 }
 
 // Initiates a TCP server and accepts connections for the registry
-func InitRegistryServer(rs RegistrySettings, registry *Registry) error {
+func InitRegistryServer(rs RegistrySettings, registry Registry) error {
 	tcpServer, err := net.Listen(rs.REGISTRY_TYPE, rs.REGISTRY_HOST+":"+rs.REGISTRY_PORT)
 
 	if err != nil {
@@ -27,7 +27,10 @@ func InitRegistryServer(rs RegistrySettings, registry *Registry) error {
 	defer tcpServer.Close()
 	fmt.Println("Listening on " + rs.REGISTRY_HOST + ":" + rs.REGISTRY_PORT)
 
+	// Registry gorountines
 	go printRegistry(registry)
+	go removeDeadServices(registry, 10*time.Second)
+
 	for {
 		conn, err := tcpServer.Accept()
 
@@ -35,13 +38,12 @@ func InitRegistryServer(rs RegistrySettings, registry *Registry) error {
 			fmt.Printf("TCP connection error: %v \n", err)
 			continue
 		}
-
 		go handleRequest(conn, registry)
 	}
 }
 
 // handles every incoming request in a separate thread
-func handleRequest(conn net.Conn, registry *Registry) {
+func handleRequest(conn net.Conn, registry Registry) {
 	decoder := json.NewDecoder(conn)
 	response := registryResponse{Code: 0}
 
@@ -58,18 +60,16 @@ func handleRequest(conn net.Conn, registry *Registry) {
 
 // Useed to print out the registry every 5 seconds.
 // Note: For development purpose. Remove this in production
-func printRegistry(registry *Registry) {
+func printRegistry(registry Registry) {
 	for {
-		mutex.Lock()
 		fmt.Printf("Registry Info: \n %v \n", registry)
-		mutex.Unlock()
 		time.Sleep(5 * time.Second)
 	}
 }
 
 // handles messages comming from the clients and responds according to the
 // message type e.g Register
-func handleMessage(msg Message, response *registryResponse, registry *Registry) {
+func handleMessage(msg Message, response *registryResponse, registry Registry) {
 	// check for message type
 	typeVal, typeExist := msg["type"]
 
