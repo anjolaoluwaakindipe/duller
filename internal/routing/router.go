@@ -24,6 +24,9 @@ func (mr *MuxRouter) RegisterRoutes() {
 	mr.router.Use(mux.CORSMethodMiddleware(mr.router))
 }
 
+type MuxRoutes struct{
+
+}
 func (mr *MuxRouter) GetPath(proxyfunc func (string )(*httputil.ReverseProxy, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := mux.Vars(r)
