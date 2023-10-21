@@ -1,13 +1,17 @@
 package routing
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 
+	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 )
 
 type Router interface {
@@ -16,28 +20,30 @@ type Router interface {
 }
 
 type MuxRouter struct {
-	router *mux.Router	
-} 
+	router         *mux.Router
+	gatewayAddress string
+}
 
 func (mr *MuxRouter) RegisterRoutes() {
-	mr.router.HandleFunc("/{path}",mr.GetPath(mr.ProxyRequest)).Methods("GET")
+	mr.router.HandleFunc("/{path}", mr.GetPath(mr.ProxyRequest)).Methods("GET")
 	mr.router.Use(mux.CORSMethodMiddleware(mr.router))
 }
 
-type MuxRoutes struct{
-
+type MuxRoutes struct {
 }
-func (mr *MuxRouter) GetPath(proxyfunc func (string )(*httputil.ReverseProxy, error)) func(http.ResponseWriter, *http.Request) {
+
+func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := mux.Vars(r)
 		fmt.Println(path)
 		//  use path to get address from service discovery
+
 		address := "asdf"
 
 		proxy, err := proxyfunc(address)
 		if err != nil {
 			log.Printf("address of discovered service is invalid : %v", err)
-			return 
+			return
 		}
 
 		proxy.ServeHTTP(w, r)
@@ -45,12 +51,44 @@ func (mr *MuxRouter) GetPath(proxyfunc func (string )(*httputil.ReverseProxy, er
 	}
 }
 
-func (mr *MuxRouter) GetAddress(address string) (string, error) {
-	return "", nil 
+func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
+	conn, err := net.Dial("tcp", mr.gatewayAddress)
+
+
+	if err != nil {
+		return "", http.StatusInternalServerError, err
+	}
+	defer conn.Close()
+
+	message := discovery.GetAddressMessage{Path: path}
+
+	jsonMessage, _ := json.Marshal(message)
+
+	if _, err := conn.Write(jsonMessage); err != nil {
+		return "", http.StatusInternalServerError, fmt.Errorf("error while sending path to registry")
+	}
+
+	decoder := json.NewDecoder(conn)
+
+	var response discovery.RegistryResponse
+
+	decoder.Decode(&response)
+
+	if response.Code != 0 {
+		return "", http.StatusNotFound, fmt.Errorf(response.Message)
+	}
+
+	var address string
+
+	if err := mapstructure.Decode(response.Data, &address); err != nil {
+		return "", http.StatusInternalServerError, fmt.Errorf("could not decode registry server response data")
+	}
+
+	return address, http.StatusOK, nil
 }
 
-func (mr *MuxRouter) ProxyRequest(targetUrl string) (*httputil.ReverseProxy, error){
-	url , err := url.Parse(targetUrl)
+func (mr *MuxRouter) ProxyRequest(targetUrl string) (*httputil.ReverseProxy, error) {
+	url, err := url.Parse(targetUrl)
 	if err != nil {
 		return nil, err
 	}

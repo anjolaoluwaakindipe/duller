@@ -1,18 +1,26 @@
 package discovery
 
-type Message map[string]interface{}
+type Message struct {
+	Type string
+	Data interface{}
+}
 
 const (
 	registerServiceMsg = "registerServiceMsg"
 )
 
-type registerServiceMessage struct {
+type RegisterServiceMessage struct {
 	ServerName string `json:"serverName"`
 	Path       string `json:"path"`
 	Address    string `json:"address"`
 }
 
-type registryResponse struct {
+type GetAddressMessage struct {
+	Path string `json:"path"`
+}
+
+type RegistryResponse struct {
 	Code    int
 	Message string
+	Data    interface{}
 }

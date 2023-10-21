@@ -45,12 +45,18 @@ func InitRegistryServer(rs RegistrySettings, registry Registry) error {
 // handles every incoming request in a separate thread
 func handleRequest(conn net.Conn, registry Registry) {
 	decoder := json.NewDecoder(conn)
-	response := registryResponse{Code: 0}
+	response := RegistryResponse{Code: 0}
 
 	var msg Message
-	decoder.Decode(&msg)
+	err := decoder.Decode(&msg)
 
-	handleMessage(msg, &response, registry)
+	if err != nil {
+		response.Code = 1
+		response.Message = "Invalid Message structure"
+	} else {
+
+		handleMessage(msg, &response, registry)
+	}
 
 	responseJson, _ := json.Marshal(response)
 	conn.Write(responseJson)
@@ -69,28 +75,17 @@ func printRegistry(registry Registry) {
 
 // handles messages comming from the clients and responds according to the
 // message type e.g Register
-func handleMessage(msg Message, response *registryResponse, registry Registry) {
+func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 	// check for message type
-	typeVal, typeExist := msg["type"]
-
-	if !typeExist {
-		response.Code = 1
-		response.Message = "Message doesn't have 'type' property"
-		return
-	}
+	typeVal := msg.Type
 
 	//  get message data
-	dataVal, dataExist := msg["data"]
-
-	if !dataExist {
-		response.Code = 1
-		response.Message = "Message doesn't have 'data' property"
-	}
+	dataVal := msg.Data
 
 	// based on the message type try and parse the message to its corresponding struct
 	switch typeVal {
 	case registerServiceMsg:
-		var registerServerMessage registerServiceMessage
+		var registerServerMessage RegisterServiceMessage
 		if err := mapstructure.Decode(dataVal, &registerServerMessage); err != nil {
 			response.Code = 1
 			response.Message = "Data does not match type"
@@ -103,6 +98,6 @@ func handleMessage(msg Message, response *registryResponse, registry Registry) {
 	default:
 		fmt.Println(msg)
 		response.Code = 1
-		response.Message = "Invalid Message"
+		response.Message = "Invalid Message Type"
 	}
 }

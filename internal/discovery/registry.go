@@ -9,7 +9,7 @@ import (
 )
 
 type Registry interface {
-	RegisterService(msg registerServiceMessage) error
+	RegisterService(msg RegisterServiceMessage) error
 	GetService(path string) (*ServiceInfo, error)
 	RefreshRegistry(duration time.Duration)
 }
@@ -30,8 +30,8 @@ func (r *InMemoryRegistry) MakePathValid(str *string) {
 	}
 }
 
-func (r *InMemoryRegistry) GetServicePathRegex () string {
-	return  r.servicPathRegex
+func (r *InMemoryRegistry) GetServicePathRegex() string {
+	return r.servicPathRegex
 }
 
 func (r *InMemoryRegistry) GetPathFromRequest(str string) (string, error) {
@@ -68,7 +68,7 @@ func (r *InMemoryRegistry) SetServicePathRegex() {
 
 // registring and updating services on the network
 // if heartbeat is implemented the timeCreated field is always updated
-func (r *InMemoryRegistry) RegisterService(msg registerServiceMessage) error {
+func (r *InMemoryRegistry) RegisterService(msg RegisterServiceMessage) error {
 	if len(msg.Path) == 0 {
 		return fmt.Errorf("path field is empty")
 	}
@@ -87,7 +87,7 @@ func (r *InMemoryRegistry) RegisterService(msg registerServiceMessage) error {
 
 // Get a specific service based on the path string as input
 func (r *InMemoryRegistry) GetService(path string) (*ServiceInfo, error) {
-	servicePath , err := r.GetPathFromRequest(path)
+	servicePath, err := r.GetPathFromRequest(path)
 
 	if err != nil {
 		return nil, fmt.Errorf("invalid path")
