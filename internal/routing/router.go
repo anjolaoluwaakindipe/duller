@@ -34,11 +34,17 @@ type MuxRoutes struct {
 
 func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		path := mux.Vars(r)
-		fmt.Println(path)
+		vars := mux.Vars(r)
 		//  use path to get address from service discovery
 
-		address := "asdf"
+		address, status, getAddErr := mr.GetAddress(vars["path"])
+
+		if getAddErr != nil {
+			w.WriteHeader(status)
+			response := GatewayErrorMessage{Message: getAddErr.Error(), Status: status}
+			jsonResponse, _ := json.Marshal(&response)
+			w.Write(jsonResponse)
+		}
 
 		proxy, err := proxyfunc(address)
 		if err != nil {
