@@ -77,24 +77,42 @@ func printRegistry(registry Registry) {
 // message type e.g Register
 func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 	// check for message type
-	typeVal := msg.Type
+	msgType := msg.Type
 
 	//  get message data
-	dataVal := msg.Data
+	data := msg.Data
 
 	// based on the message type try and parse the message to its corresponding struct
-	switch typeVal {
+	switch msgType {
 	case registerServiceMsg:
-		var registerServerMessage RegisterServiceMessage
-		if err := mapstructure.Decode(dataVal, &registerServerMessage); err != nil {
+		var message RegisterServiceMessage
+		if err := mapstructure.Decode(data, &message); err != nil {
 			response.Code = 1
-			response.Message = "Data does not match type"
+			response.Message = "Data does not match specified type"
 		}
-		if err := registry.RegisterService(registerServerMessage); err != nil {
+		if err := registry.RegisterService(message); err != nil {
 			response.Code = 1
-			response.Message = fmt.Sprintf(`service with path "%v" already exists in registry`, registerServerMessage.Path)
+			response.Message = fmt.Sprintf(`service with path "%v" already exists in registry`, message.Path)
 			break
 		}
+
+	case getAddressMsg:
+		var message GetAddressMessage
+		if err := mapstructure.Decode(data, &message); err != nil {
+			response.Code = 1
+			response.Message = "Data does not match specified type"
+		}
+		serviceInfo, err := registry.GetService(message.Path)
+
+		if err != nil {
+			response.Code = 1
+			response.Message = fmt.Sprintf("Error occured while getting service: %v", err.Error())
+		}
+
+		dataMap := make(map[string]interface{})
+		dataMap["address"] = serviceInfo.address
+		response.Data = dataMap
+
 	default:
 		fmt.Println(msg)
 		response.Code = 1

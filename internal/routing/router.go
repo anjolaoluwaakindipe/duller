@@ -47,6 +47,7 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 		}
 
 		proxy, err := proxyfunc(address)
+
 		if err != nil {
 			log.Printf("address of discovered service is invalid : %v", err)
 			return

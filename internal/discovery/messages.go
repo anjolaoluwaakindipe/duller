@@ -7,6 +7,7 @@ type Message struct {
 
 const (
 	registerServiceMsg = "registerServiceMsg"
+	getAddressMsg = "getAddressMsg"
 )
 
 type RegisterServiceMessage struct {
