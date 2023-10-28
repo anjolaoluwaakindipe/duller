@@ -1,52 +1,37 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"net"
+	"flag"
+	"time"
+
+	"github.com/anjolaoluwaakindipe/duller/internal/client"
+)
+
+// defaults for the test client cli
+const (
+	DISCOVERY_LOCATION = "http://localhost:9876"
+	CLIENT_PORT        = "3000"
+	GATEWAY_PATH       = "/test"
+	SERVER_NAME        = "server1"
+	HEARTBEAT_INTERVAL = 14 * time.Second
 )
 
 func main() {
+	var heartBeatInterval time.Duration
+	cport := flag.String("cport", CLIENT_PORT, "The PORT number the client server should run on")
+	gpath := flag.String("gpath", GATEWAY_PATH, "The path the client server will use in the discovery server. This is used by the gateway when proxying")
+	cname := flag.String("cname", SERVER_NAME, "Name of the client server")
+	dlocation := flag.String("rlocation", DISCOVERY_LOCATION, "Address of the discovery server")
+	flag.DurationVar(&heartBeatInterval, "cinterval", heartBeatInterval, "Interval at which the client server will be sending out heartbeats")
 
-	conn, err := net.Dial("tcp", "localhost:9876")
-	if err != nil {
-		fmt.Println("Error connecting to server:", err)
-		return
+	flag.Parse()
+	clientServerSettings := client.ClientServerSettings{
+		ClientPort:        *cport,
+		Path:              *gpath,
+		ServerName:        *cname,
+		HeartBeatInterval: heartBeatInterval,
+		RegistryLocation:  *dlocation,
 	}
-	defer conn.Close()
+	client.InitServer(clientServerSettings)
 
-	message := struct {
-		Type string `json:"type"`
-
-		Data struct {
-			ServerName string `json:"serverName"`
-			Path       string `json:"path"`
-			Address    string `json:"address"`
-		} `json:"data"`
-	}{
-		Type: "registerServiceMsg",
-		Data: struct {
-			ServerName string `json:"serverName"`
-			Path       string `json:"path"`
-			Address    string `json:"address"`
-		}{
-
-			ServerName: "hello",
-			Path:       "tan",
-			Address:    "http://localhost:3000/",
-		},
-	}
-
-	jsonMessage, _ := json.Marshal(message)
-
-	_, err = conn.Write(jsonMessage)
-	if err != nil {
-		fmt.Println("Error sending JSON message to server:", err)
-		return
-	}
-
-	decoder, _ := io.ReadAll(conn)
-
-	fmt.Println("Sent JSON message to server:", string(decoder))
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/anjolaoluwaakindipe/duller/internal/routing"
 )
 
-// cli constants
+// defaults for the gateway & discovery cli
 const (
 	REGISTRY_HOST          = "localhost"
 	REGISTRY_PORT          = "9876"
