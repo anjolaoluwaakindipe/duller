@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"time"
 
@@ -21,7 +22,7 @@ func (dc DiscoveryClient) SendHeartBeat(interval time.Duration, serverLocation s
 	for {
 		conn, err := net.Dial("tcp", serverLocation)
 		if err != nil {
-			fmt.Println("Error connecting to server:", err)
+			log.Println("Error connecting to server:", err)
 			return
 		}
 		defer conn.Close()
@@ -36,7 +37,7 @@ func (dc DiscoveryClient) SendHeartBeat(interval time.Duration, serverLocation s
 		jsonMessage, _ := json.Marshal(message)
 		_, err = conn.Write(jsonMessage)
 		if err != nil {
-			fmt.Println("Error sending JSON message to server:", err)
+			log.Println("Error sending JSON message to server:", err)
 			return
 		}
 

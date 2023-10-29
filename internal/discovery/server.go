@@ -14,6 +14,7 @@ type RegistrySettings struct {
 	REGISTRY_HOST string
 	REGISTRY_PORT string
 	REGISTRY_TYPE string
+	HEARTBEAT_INTERVAL time.Duration
 }
 
 // Initiates a TCP server and accepts connections for the registry
@@ -29,7 +30,7 @@ func InitRegistryServer(rs RegistrySettings, registry Registry) error {
 
 	// Registry gorountines
 	go printRegistry(registry)
-	go removeDeadServices(registry, 10*time.Second)
+	go removeDeadServices(registry, rs.HEARTBEAT_INTERVAL)
 
 	for {
 		conn, err := tcpServer.Accept()
@@ -68,6 +69,7 @@ func handleRequest(conn net.Conn, registry Registry) {
 // Note: For development purpose. Remove this in production
 func printRegistry(registry Registry) {
 	for {
+
 		fmt.Printf("Registry Info: \n %v \n", registry)
 		time.Sleep(5 * time.Second)
 	}

@@ -57,13 +57,11 @@ func (r *InMemoryRegistry) SetServicePathRegex() {
 		return
 	}
 	paths := make([]string, 0)
-	r.Mutex.Lock()
 	for k := range r.Services {
 		reg := regexp.QuoteMeta(k)
 		paths = append(paths, reg)
 	}
 	r.servicPathRegex = "^(" + strings.Join(paths, "|") + ")"
-	r.Mutex.Unlock()
 }
 
 // registring and updating services on the network
@@ -104,7 +102,8 @@ func (r *InMemoryRegistry) GetService(path string) (*ServiceInfo, error) {
 func (r *InMemoryRegistry) RefreshRegistry(duration time.Duration) {
 	r.Mutex.Lock()
 	for path, service := range r.Services {
-		if time.Since(service.timeCreated) > duration+1 {
+		fmt.Printf("%v", duration)
+		if time.Since(service.timeCreated) > duration {
 			delete(r.Services, path)
 		}
 	}
