@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
-	"github.com/anjolaoluwaakindipe/duller/internal/routing"
+	routing "github.com/anjolaoluwaakindipe/duller/internal/gateway"
 )
 
 // defaults for the gateway & discovery cli

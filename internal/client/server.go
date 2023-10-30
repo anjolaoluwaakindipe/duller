@@ -29,9 +29,11 @@ func InitServer(settings ClientServerSettings) {
 	go client.SendHeartBeat(settings.HeartBeatInterval, settings.RegistryLocation)
 
 	err := http.ListenAndServe(fmt.Sprintf(":%v", settings.ClientPort), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.Marshal(map[string]interface{}{
+		msg, _ := json.Marshal(map[string]interface{}{
 			"message": fmt.Sprintf("Hello from server %v, with address %v, and you used path %v from the gateway to get to me", settings.ServerName, serviceAddress, settings.Path),
 		})
+		w.WriteHeader(http.StatusOK)
+		w.Write(msg)
 	}))
 
 	if err != nil {

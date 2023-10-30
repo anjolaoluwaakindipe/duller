@@ -35,15 +35,33 @@ type MuxRoutes struct {
 func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
+		//  edit path
+		path := vars["path"]
+		if len(path) < 1 {
+			response := GatewayErrorMessage{Message: "No path specified", Status: http.StatusBadRequest}
+			jsonResponse, _ := json.Marshal(&response)
+			w.Write(jsonResponse)
+			return
+		}
+
+		if path[0] != '/' {
+			path = "/" + path
+		}
+
+		for path[len(path)-1] == '/' {
+			path = path[0 : len(path)-1]
+		}
+
 		//  use path to get address from service discovery
 
-		address, status, getAddErr := mr.GetAddress(vars["path"])
+		address, status, getAddErr := mr.GetAddress(path)
 
 		if getAddErr != nil {
 			w.WriteHeader(status)
 			response := GatewayErrorMessage{Message: getAddErr.Error(), Status: status}
 			jsonResponse, _ := json.Marshal(&response)
 			w.Write(jsonResponse)
+			return
 		}
 
 		proxy, err := proxyfunc(address)
@@ -87,13 +105,15 @@ func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
 		return "", http.StatusNotFound, fmt.Errorf(response.Message)
 	}
 
-	var address string
+	var info struct {
+		Address string `json:"address"`
+	}
 
-	if err := mapstructure.Decode(response.Data, &address); err != nil {
+	if err := mapstructure.Decode(response.Data, &info); err != nil {
 		return "", http.StatusInternalServerError, fmt.Errorf("could not decode registry server response data")
 	}
 
-	return address, http.StatusOK, nil
+	return info.Address, http.StatusOK, nil
 }
 
 func (mr *MuxRouter) ProxyRequest(targetUrl string) (*httputil.ReverseProxy, error) {
