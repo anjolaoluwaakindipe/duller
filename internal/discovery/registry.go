@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 )
 
 type Registry interface {
@@ -17,17 +19,6 @@ type InMemoryRegistry struct {
 	Mutex           sync.Mutex
 	Services        map[string]ServiceInfo
 	servicPathRegex string
-}
-
-// helps edit the path to a more
-func (r *InMemoryRegistry) MakePathValid(str *string) {
-	val := *str
-	if val[0] != '/' {
-		*str = "/" + *str
-	}
-	if val[len(val)-1] == '/' {
-		*str = (*str)[:len(*str)-1]
-	}
 }
 
 func (r *InMemoryRegistry) GetServicePathRegex() string {
@@ -70,7 +61,7 @@ func (r *InMemoryRegistry) RegisterService(msg RegisterServiceMessage) error {
 	if len(msg.Path) == 0 {
 		return fmt.Errorf("path field is empty")
 	}
-	r.MakePathValid(&msg.Path)
+	utils.MakeUrlPathValid(&msg.Path)
 	service, exist := r.Services[msg.Path]
 	r.Mutex.Lock()
 	if !exist {

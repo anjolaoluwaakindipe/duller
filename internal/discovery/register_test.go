@@ -8,32 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_MakePathValid(t *testing.T) {
-
-	t.Run("WHEN given valid string SHOULD string should remain the same", func(t *testing.T) {
-		t.Parallel()
-		input := "/hello"
-
-		registry := discovery.InMemoryRegistry{Services: make(map[string]discovery.ServiceInfo)}
-
-		registry.MakePathValid(&input)
-
-		assert.Equal(t, input, "/hello")
-
-	})
-
-	t.Run("WHEN given invalid string withough '/' as first character", func(t *testing.T) {
-		t.Parallel()
-		input := "hello/"
-
-		registry := discovery.InMemoryRegistry{Services: make(map[string]discovery.ServiceInfo)}
-
-		registry.MakePathValid(&input)
-
-		assert.Equal(t, input, "/hello")
-	})
-}
-
 
 func Test_SetServicePathRegex( t *testing.T){
 	t.Run("WHEN there is no service SHOULD generate regex string when from service map", func(t *testing.T) {

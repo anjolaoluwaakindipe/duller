@@ -1,4 +1,6 @@
-package routing
+// Package gateway provides functionality for instanciating an api gateway and talking
+// directly to the service discovery server
+package gateway
 
 import (
 	"context"
@@ -15,6 +17,7 @@ type GatewaySetting struct {
 	GATEWAY_GRACEFULL_WAIT time.Duration
 }
 
+// InitGateway initiates an api gateway setup to talk to a duller discovery server
 func InitGateway(router Router, settings GatewaySetting) {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	router.RegisterRoutes()

@@ -1,4 +1,4 @@
-package routing
+package gateway
 
 import (
 	"encoding/json"
@@ -10,49 +10,49 @@ import (
 	"net/url"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
+	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 )
 
+// Router requires some sort of implementation
 type Router interface {
 	RegisterRoutes()
 	GetRouter() http.Handler
 }
 
+// MuxRouter this is a Gorilla Mux router implementation of the router needed for the gateway
 type MuxRouter struct {
 	router           *mux.Router
 	discoveryAddress string
 }
 
+// RegisterRoutes registers all handlers needed for the gateway
 func (mr *MuxRouter) RegisterRoutes() {
-	mr.router.HandleFunc("/{path}", mr.GetPath(mr.ProxyRequest)).Methods("GET")
+	mr.router.HandleFunc("/{path}", mr.GetPath(mr.proxyRequest)).Methods("GET")
 	mr.router.Use(mux.CORSMethodMiddleware(mr.router))
 }
 
-type MuxRoutes struct {
-}
-
+// GetPath takes in a path variable from the gateway url and proxies the request
+// to its associated service. It makes a request to the discovery server to fetch the right
+// address to proxy the request to
 func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		//  edit path
-		path := vars["path"]
-		if len(path) < 1 {
-			response := GatewayErrorMessage{Message: "No path specified", Status: http.StatusBadRequest}
+		path, ok := vars["path"]
+		response := GatewayErrorMessage{}
+
+		if !ok {
+			response.Message = "No path specified"
+			response.Status = http.StatusBadRequest
 			jsonResponse, _ := json.Marshal(&response)
+			w.WriteHeader(response.Status)
 			w.Write(jsonResponse)
 			return
 		}
 
-		if path[0] != '/' {
-			path = "/" + path
-		}
-
-		for path[len(path)-1] == '/' {
-			path = path[0 : len(path)-1]
-		}
-
-		//  use path to get address from service discovery
+		utils.MakeUrlPathValid(&path)
 
 		address, status, getAddErr := mr.GetAddress(path)
 
@@ -72,10 +72,11 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 		}
 
 		proxy.ServeHTTP(w, r)
-
 	}
 }
 
+// GetAddress messages a discovery server to get the appropriate service address
+// for a requested path
 func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
 	conn, err := net.Dial("tcp", mr.discoveryAddress)
 
@@ -116,7 +117,8 @@ func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
 	return info.Address, http.StatusOK, nil
 }
 
-func (mr *MuxRouter) ProxyRequest(targetUrl string) (*httputil.ReverseProxy, error) {
+// proxyRequest takes in a targetUrl and proxies the entire request to that service
+func (mr *MuxRouter) proxyRequest(targetUrl string) (*httputil.ReverseProxy, error) {
 	url, err := url.Parse(targetUrl)
 	if err != nil {
 		return nil, err
