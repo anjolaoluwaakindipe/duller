@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
@@ -37,7 +38,7 @@ func main() {
 		HEARTBEAT_INTERVAL: rheartbeat,
 	}, serviceRegistry)
 
-	gatewayRouter := routing.InitMuxRouter()
+	gatewayRouter := routing.InitMuxRouter(fmt.Sprintf("%v:%v", *rhost, *rport))
 
 	routing.InitGateway(gatewayRouter, routing.GatewaySetting{
 		GATEWAY_PORT:           *gport,

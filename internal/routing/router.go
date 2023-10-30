@@ -20,8 +20,8 @@ type Router interface {
 }
 
 type MuxRouter struct {
-	router         *mux.Router
-	gatewayAddress string
+	router           *mux.Router
+	discoveryAddress string
 }
 
 func (mr *MuxRouter) RegisterRoutes() {
@@ -59,15 +59,17 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 }
 
 func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
-	conn, err := net.Dial("tcp", mr.gatewayAddress)
-
+	conn, err := net.Dial("tcp", mr.discoveryAddress)
 
 	if err != nil {
 		return "", http.StatusInternalServerError, err
 	}
 	defer conn.Close()
 
-	message := discovery.GetAddressMessage{Path: path}
+	message := discovery.Message{
+		Type: "getAddressMsg",
+		Data: discovery.GetAddressMessage{Path: path},
+	}
 
 	jsonMessage, _ := json.Marshal(message)
 
@@ -106,8 +108,9 @@ func (mr *MuxRouter) GetRouter() http.Handler {
 	return mr.router
 }
 
-func InitMuxRouter() Router {
+func InitMuxRouter(discoveryAddress string) Router {
 	return &MuxRouter{
-		router: mux.NewRouter(),
+		router:           mux.NewRouter(),
+		discoveryAddress: discoveryAddress,
 	}
 }

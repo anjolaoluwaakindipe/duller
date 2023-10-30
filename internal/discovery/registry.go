@@ -90,9 +90,9 @@ func (r *InMemoryRegistry) GetService(path string) (*ServiceInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid path")
 	}
-
+	r.Mutex.Lock()
 	val, ok := r.Services[servicePath]
-
+	r.Mutex.Unlock()
 	if !ok {
 		return nil, fmt.Errorf("path '%v' does not exist", path)
 	}

@@ -16,6 +16,7 @@ type GatewaySetting struct {
 }
 
 func InitGateway(router Router, settings GatewaySetting) {
+	log.SetFlags(log.LstdFlags | log.Llongfile)
 	router.RegisterRoutes()
 	server := &http.Server{
 		Addr:         fmt.Sprintf("0.0.0.0:%v", settings.GATEWAY_PORT),
@@ -26,10 +27,8 @@ func InitGateway(router Router, settings GatewaySetting) {
 	}
 
 	go func() {
+		log.Printf("Gateway server starting on port %v \n", settings.GATEWAY_PORT)
 		err := server.ListenAndServe()
-		if err == nil {
-			log.Printf("Gateway server starting on port %v \n", settings.GATEWAY_PORT)
-		}
 		if err != nil {
 			log.Printf("Gateway Server could not be started: %v \n", err)
 		}
@@ -49,4 +48,3 @@ func InitGateway(router Router, settings GatewaySetting) {
 	log.Println("Shutting down gateway server")
 	os.Exit(0)
 }
-

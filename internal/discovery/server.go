@@ -109,6 +109,7 @@ func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 		if err != nil {
 			response.Code = 1
 			response.Message = fmt.Sprintf("Error occured while getting service: %v", err.Error())
+			break
 		}
 
 		dataMap := make(map[string]interface{})
