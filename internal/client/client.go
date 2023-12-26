@@ -11,7 +11,6 @@ import (
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
 )
 
-
 type DiscoveryClient struct {
 	ServerName string
 	Path       string
@@ -29,9 +28,9 @@ func (dc DiscoveryClient) SendHeartBeat(interval time.Duration, serverLocation s
 		message := discovery.Message{
 			Type: "registerServiceMsg",
 			Data: discovery.RegisterServiceMessage{
-				ServerName: dc.ServerName,
-				Path:       dc.Path,
-				Address:    dc.Address,
+				ServiceName: dc.ServerName,
+				Path:        dc.Path,
+				Address:     dc.Address,
 			},
 		}
 		jsonMessage, _ := json.Marshal(message)

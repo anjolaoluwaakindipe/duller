@@ -7,13 +7,13 @@ type Message struct {
 
 const (
 	registerServiceMsg = "registerServiceMsg"
-	getAddressMsg = "getAddressMsg"
+	getAddressMsg      = "getAddressMsg"
 )
 
 type RegisterServiceMessage struct {
-	ServerName string `json:"serverName"`
-	Path       string `json:"path"`
-	Address    string `json:"address"`
+	ServiceName string `json:"serverName"`
+	Path        string `json:"path"`
+	Address     string `json:"address"`
 }
 
 type GetAddressMessage struct {

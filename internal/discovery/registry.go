@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -65,7 +66,7 @@ func (r *InMemoryRegistry) RegisterService(msg RegisterServiceMessage) error {
 	service, exist := r.Services[msg.Path]
 	r.Mutex.Lock()
 	if !exist {
-		r.Services[msg.Path] = ServiceInfo{timeCreated: time.Now(), serverName: msg.ServerName, path: msg.Path, address: msg.Address}
+		r.Services[msg.Path] = ServiceInfo{timeCreated: time.Now(), serverName: msg.ServiceName, path: msg.Path, address: msg.Address}
 	} else {
 		service.timeCreated = time.Now()
 	}
@@ -101,10 +102,15 @@ func (r *InMemoryRegistry) RefreshRegistry(duration time.Duration) {
 	r.Mutex.Unlock()
 }
 
-func removeDeadServices(r Registry, duration time.Duration) {
+func removeDeadServices(r Registry, duration time.Duration, ctx context.Context) {
 	for {
-		time.Sleep(duration)
-		r.RefreshRegistry(duration)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			time.Sleep(duration)
+			r.RefreshRegistry(duration)
+		}
 	}
 }
 

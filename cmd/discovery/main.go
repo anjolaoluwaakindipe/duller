@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"time"
@@ -30,13 +31,13 @@ func main() {
 	flag.Parse()
 
 	serviceRegistry := discovery.InitInMemoryRegistry()
-
+	ctx := context.Background()
 	go discovery.InitRegistryServer(discovery.RegistrySettings{
 		REGISTRY_HOST:      *rhost,
 		REGISTRY_PORT:      *rport,
 		REGISTRY_TYPE:      REGISTRY_TYPE,
 		HEARTBEAT_INTERVAL: rheartbeat,
-	}, serviceRegistry)
+	}, serviceRegistry, ctx, nil)
 
 	gatewayRouter := routing.InitMuxRouter(fmt.Sprintf("%v:%v", *rhost, *rport))
 

@@ -1,50 +1,67 @@
 package discovery
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"log/slog"
 	"net"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
 
-// Setting for the Registry Server
+// RegistrySettings holds configuration for the Registry Server
 type RegistrySettings struct {
-	REGISTRY_HOST string
-	REGISTRY_PORT string
-	REGISTRY_TYPE string
+	REGISTRY_HOST      string
+	REGISTRY_PORT      string
+	REGISTRY_TYPE      string
 	HEARTBEAT_INTERVAL time.Duration
 }
 
-// Initiates a TCP server and accepts connections for the registry
-func InitRegistryServer(rs RegistrySettings, registry Registry) error {
+// InitRegistryServer initiates a TCP server and accepts connections for the registry
+func InitRegistryServer(rs RegistrySettings, registry Registry, ctx context.Context, status chan<- bool) error {
 	tcpServer, err := net.Listen(rs.REGISTRY_TYPE, rs.REGISTRY_HOST+":"+rs.REGISTRY_PORT)
-
+	fmt.Println(err)
 	if err != nil {
+		if status != nil {
+			status <- false
+			close(status)
+		}
 		return err
 	}
 
 	defer tcpServer.Close()
-	fmt.Println("Listening on " + rs.REGISTRY_HOST + ":" + rs.REGISTRY_PORT)
+	log.Println("Listening on " + rs.REGISTRY_HOST + ":" + rs.REGISTRY_PORT)
 
 	// Registry gorountines
-	go printRegistry(registry)
-	go removeDeadServices(registry, rs.HEARTBEAT_INTERVAL)
+	go printRegistry(registry, ctx)
+	go removeDeadServices(registry, rs.HEARTBEAT_INTERVAL, ctx)
+
+	status <- true
 
 	for {
-		conn, err := tcpServer.Accept()
-
-		if err != nil {
-			fmt.Printf("TCP connection error: %v \n", err)
-			continue
+		select {
+		case <-ctx.Done():
+			if status != nil {
+				status <- false
+				close(status)
+			}
+			return nil
+		default:
+			conn, err := tcpServer.Accept()
+			if err != nil {
+				fmt.Printf("TCP connection error: %v \n", err)
+				continue
+			}
+			go HandleRequest(conn, registry)
 		}
-		go handleRequest(conn, registry)
 	}
 }
 
-// handles every incoming request in a separate thread
-func handleRequest(conn net.Conn, registry Registry) {
+// HandleRequest handles every incoming request. Intended to be used in a seaparate goroutine.
+func HandleRequest(conn net.Conn, registry Registry) {
 	decoder := json.NewDecoder(conn)
 	response := RegistryResponse{Code: 0}
 
@@ -60,23 +77,31 @@ func handleRequest(conn net.Conn, registry Registry) {
 	}
 
 	responseJson, _ := json.Marshal(response)
-	conn.Write(responseJson)
+	if _, err := conn.Write(responseJson); err != nil {
+		slog.Warn("Could not Send response to connection")
+	}
 
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		slog.Warn("Could not close connection for client")
+	}
 }
 
 // Useed to print out the registry every 5 seconds.
 // Note: For development purpose. Remove this in production
-func printRegistry(registry Registry) {
+func printRegistry(registry Registry, ctx context.Context) {
 	for {
-
-		fmt.Printf("Registry Info: \n %v \n", registry)
-		time.Sleep(5 * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			fmt.Printf("Registry Info: \n %v \n", registry)
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 
-// handles messages comming from the clients and responds according to the
-// message type e.g Register
+// handleMessage handles incoming messages from the clients and responds according to the
+// message type e.g re
 func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 	// check for message type
 	msgType := msg.Type
