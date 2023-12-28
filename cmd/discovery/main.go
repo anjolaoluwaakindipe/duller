@@ -8,6 +8,7 @@ import (
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
 	routing "github.com/anjolaoluwaakindipe/duller/internal/gateway"
+	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 )
 
 // defaults for the gateway & discovery cli
@@ -30,7 +31,7 @@ func main() {
 	flag.DurationVar(&rheartbeat, "rheartbeat", HEARTBEAT_INTERVAL, "The interval of heartbeats expected")
 	flag.Parse()
 
-	serviceRegistry := discovery.InitInMemoryRegistry()
+	serviceRegistry := discovery.InitInMemoryRegistry(utils.NewClock())
 	ctx := context.Background()
 	go discovery.InitRegistryServer(discovery.RegistrySettings{
 		REGISTRY_HOST:      *rhost,

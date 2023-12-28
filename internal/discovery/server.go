@@ -37,7 +37,7 @@ func InitRegistryServer(rs RegistrySettings, registry Registry, ctx context.Cont
 
 	// Registry gorountines
 	go printRegistry(registry, ctx)
-	go removeDeadServices(registry, rs.HEARTBEAT_INTERVAL, ctx)
+	go registry.RefreshRegistry(rs.HEARTBEAT_INTERVAL, ctx)
 
 	status <- true
 
@@ -72,7 +72,6 @@ func HandleRequest(conn net.Conn, registry Registry) {
 		response.Code = 1
 		response.Message = "Invalid Message structure"
 	} else {
-
 		handleMessage(msg, &response, registry)
 	}
 
@@ -130,7 +129,6 @@ func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 			response.Message = "Data does not match specified type"
 		}
 		serviceInfo, err := registry.GetService(message.Path)
-
 		if err != nil {
 			response.Code = 1
 			response.Message = fmt.Sprintf("Error occured while getting service: %v", err.Error())
@@ -138,7 +136,7 @@ func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 		}
 
 		dataMap := make(map[string]interface{})
-		dataMap["address"] = serviceInfo.address
+		dataMap["address"] = serviceInfo.Address
 		response.Data = dataMap
 
 	default:

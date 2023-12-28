@@ -3,8 +3,8 @@ package discovery
 import "time"
 
 type ServiceInfo struct {
-	timeCreated time.Time
-	serverName  string
-	address     string
-	path        string
+	LastHeartbeat time.Time
+	ServiceId     string
+	Address       string
+	Path          string
 }

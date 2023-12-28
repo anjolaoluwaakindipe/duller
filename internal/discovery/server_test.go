@@ -9,18 +9,20 @@ import (
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
+	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInitRegistryServer(t *testing.T) {
+func Test_InitRegistryServer(t *testing.T) {
 	registrySettings := discovery.RegistrySettings{
 		REGISTRY_HOST:      "localhost",
 		REGISTRY_PORT:      "2000",
 		HEARTBEAT_INTERVAL: 1 * time.Second,
 		REGISTRY_TYPE:      "tcp",
 	}
-	registry := discovery.InitInMemoryRegistry()
+	registry := discovery.InitInMemoryRegistry(utils.NewClock())
 	t.Run("When ctx is canceled before function invocation SHOULD send false through status channel and close goroutine ", func(t *testing.T) {
+		fmt.Println("Hello")
 		ctx, cancel := context.WithCancel(context.Background())
 		status := make(chan bool)
 
@@ -36,18 +38,16 @@ func TestInitRegistryServer(t *testing.T) {
 
 		assert.Equal(t, false, finalResult)
 	})
-
 }
 
-func TestHandleRequest(t *testing.T) {
-
-	registry := discovery.InitInMemoryRegistry()
+func Test_HandleRequest(t *testing.T) {
 	t.Run("When a valid registerServiceMsg message is sent through a connection SHOULD send an okay message through the same connection", func(t *testing.T) {
+		registry := discovery.InitInMemoryRegistry(utils.NewClock())
 		testServer, testClient := net.Pipe()
 
-		go func(net.Conn) {
+		go func(con net.Conn) {
 			discovery.HandleRequest(testServer, registry)
-			testServer.Close()
+			con.Close()
 		}(testServer)
 		message := discovery.Message{Type: "registerServiceMsg", Data: discovery.RegisterServiceMessage{ServiceName: "testService", Path: "/test", Address: "http://localhost:2020"}}
 		messageAsBytes, err := json.Marshal(message)
@@ -56,13 +56,14 @@ func TestHandleRequest(t *testing.T) {
 		var response []byte
 		_, err = testClient.Read(response)
 		assert.Nil(t, err)
-		var result discovery.RegistryResponse
-		json.Unmarshal(response, &result)
+		result := &discovery.RegistryResponse{}
+		json.Unmarshal(response, result)
 		assert.NotNil(t, result)
-		fmt.Printf("%v", result)
+		testClient.Close()
 	})
 
 	t.Run("When a valid ", func(t *testing.T) {
+		registry := discovery.InitInMemoryRegistry(utils.NewClock())
 		testServer, testClient := net.Pipe()
 
 		go func(net.Conn) {
