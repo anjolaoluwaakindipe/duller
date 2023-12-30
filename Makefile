@@ -4,8 +4,8 @@ discovery_file := "./cmd/discovery/main.go"
 
 dev:client
 
-client:discovery
+client:
 	go run $(client_file)
 
-discovery:
+disc:
 	go run $(discovery_file)

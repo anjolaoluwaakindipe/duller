@@ -1,10 +1,11 @@
-package discovery
+package service
 
 import "time"
 
 type ServiceInfo struct {
 	LastHeartbeat time.Time
 	ServiceId     string
-	Address       string
+	IP            string
+	Port          string
 	Path          string
 }
