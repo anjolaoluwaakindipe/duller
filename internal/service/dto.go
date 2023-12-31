@@ -8,4 +8,5 @@ type ServiceInfo struct {
 	IP            string
 	Port          string
 	Path          string
+	IsHealthy     bool
 }

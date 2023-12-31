@@ -9,6 +9,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
+	"github.com/anjolaoluwaakindipe/duller/internal/service"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -21,7 +23,7 @@ type RegistrySettings struct {
 }
 
 // InitRegistryServer initiates a TCP server and accepts connections for the registry
-func InitRegistryServer(rs RegistrySettings, registry Registry, ctx context.Context, status chan<- bool) error {
+func InitRegistryServer(balancer balancer.LoadBalancer, rs RegistrySettings, registry Registry, ctx context.Context, status chan<- bool) error {
 	tcpServer, err := net.Listen(rs.REGISTRY_TYPE, rs.REGISTRY_HOST+":"+rs.REGISTRY_PORT)
 	fmt.Println(err)
 	if err != nil {
@@ -55,13 +57,13 @@ func InitRegistryServer(rs RegistrySettings, registry Registry, ctx context.Cont
 				fmt.Printf("TCP connection error: %v \n", err)
 				continue
 			}
-			go HandleRequest(conn, registry)
+			go HandleRequest(conn, registry, balancer)
 		}
 	}
 }
 
 // HandleRequest handles every incoming request. Intended to be used in a seaparate goroutine.
-func HandleRequest(conn net.Conn, registry Registry) {
+func HandleRequest(conn net.Conn, registry Registry, balancer balancer.LoadBalancer) {
 	decoder := json.NewDecoder(conn)
 	response := RegistryResponse{Code: 0}
 
@@ -72,7 +74,7 @@ func HandleRequest(conn net.Conn, registry Registry) {
 		response.Code = 1
 		response.Message = "Invalid Message structure"
 	} else {
-		handleMessage(msg, &response, registry)
+		handleMessage(msg, &response, registry, balancer)
 	}
 
 	responseJson, _ := json.Marshal(response)
@@ -87,7 +89,7 @@ func HandleRequest(conn net.Conn, registry Registry) {
 
 // Useed to print out the registry every 5 seconds.
 // Note: For development purpose. Remove this in production
-func printRegistry(registry Registry, ctx context.Context) {
+func printRegistry(registry service.Registry, ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -101,7 +103,7 @@ func printRegistry(registry Registry, ctx context.Context) {
 
 // handleMessage handles incoming messages from the clients and responds according to the
 // message type e.g re
-func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
+func handleMessage(msg Message, response *RegistryResponse, registry service.Registry, balancer balancer.LoadBalancer) {
 	// check for message type
 	msgType := msg.Type
 
@@ -116,7 +118,7 @@ func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 			response.Code = 1
 			response.Message = "Data does not match specified type"
 		}
-		if err := registry.RegisterService(message); err != nil {
+		if err := registry.RegisterService(service.ServiceInfo{ServiceId: message.ServiceName, Path: message.Path}); err != nil {
 			response.Code = 1
 			response.Message = fmt.Sprintf(`service with path "%v" already exists in registry`, message.Path)
 			break
@@ -128,7 +130,7 @@ func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 			response.Code = 1
 			response.Message = "Data does not match specified type"
 		}
-		serviceInfo, err := registry.GetService(message.Path)
+		serviceInfo, err := balancer.GetNextService(message.Path)
 		if err != nil {
 			response.Code = 1
 			response.Message = fmt.Sprintf("Error occured while getting service: %v", err.Error())
@@ -136,7 +138,7 @@ func handleMessage(msg Message, response *RegistryResponse, registry Registry) {
 		}
 
 		dataMap := make(map[string]interface{})
-		dataMap["address"] = serviceInfo.Address
+		dataMap["address"] = "http://" + serviceInfo.IP + ":" + serviceInfo.Port
 		response.Data = dataMap
 
 	default:

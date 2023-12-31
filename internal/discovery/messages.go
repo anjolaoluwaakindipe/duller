@@ -25,3 +25,9 @@ type RegistryResponse struct {
 	Message string
 	Data    interface{}
 }
+
+type GetServiceResponse struct {
+	IP        string
+	Port      string
+	ServiceId string
+}
