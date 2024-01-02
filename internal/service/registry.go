@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"time"
 )
 
@@ -17,7 +18,7 @@ type Registry interface {
 	// Returns all available services in Registry
 	GetServices() []*ServiceInfo
 	// RefreshRegistry helps remove dead services. This is meant to be used in a goroutine
-	RefreshRegistry(duration time.Duration)
+	RefreshRegistry(duration time.Duration, ctx context.Context)
 	// DeregisterService a service from registry given a path and serviceId
 	// returns an error if an invalid path or serviceId is given
 	DeregisterService(path string, serviceId string) error

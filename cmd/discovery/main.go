@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
 	routing "github.com/anjolaoluwaakindipe/duller/internal/gateway"
+	"github.com/anjolaoluwaakindipe/duller/internal/service"
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 )
 
@@ -31,9 +33,12 @@ func main() {
 	flag.DurationVar(&rheartbeat, "rheartbeat", HEARTBEAT_INTERVAL, "The interval of heartbeats expected")
 	flag.Parse()
 
-	serviceRegistry := discovery.InitInMemoryRegistry(utils.NewClock())
+	serviceRegistry := service.InitInMemoryRegistry(utils.NewClock())
+	loadBalancer := balancer.NewRoundRobinLoadBalancer(serviceRegistry)
+
 	ctx := context.Background()
-	go discovery.InitRegistryServer(discovery.RegistrySettings{
+
+	go discovery.InitRegistryServer(loadBalancer, discovery.RegistrySettings{
 		REGISTRY_HOST:      *rhost,
 		REGISTRY_PORT:      *rport,
 		REGISTRY_TYPE:      REGISTRY_TYPE,

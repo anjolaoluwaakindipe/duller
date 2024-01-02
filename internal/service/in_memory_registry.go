@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -156,38 +157,47 @@ func (r *InMemoryRegistry) DeregisterService(path string, serviceId string) erro
 	return nil
 }
 
-func (r *InMemoryRegistry) RefreshRegistry(duration time.Duration) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	deadServices := make([]struct {
-		Path string
-		Id   string
-		Ind  int
-	}, 0)
+func (r *InMemoryRegistry) RefreshRegistry(duration time.Duration, ctx context.Context) {
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			r.mutex.Lock()
+			defer r.mutex.Unlock()
+			deadServices := make([]struct {
+				Path string
+				Id   string
+				Ind  int
+			}, 0)
 
-	for path, services := range r.PathTable {
-		for ind, service := range services {
-			if time.Now().After(service.LastHeartbeat.Add(duration)) {
-				deadServices = append(deadServices, struct {
-					Path string
-					Id   string
-					Ind  int
-				}{
-					Path: path,
-					Id:   service.ServiceId,
-					Ind:  ind,
-				})
+			for path, services := range r.PathTable {
+				for ind, service := range services {
+					if time.Now().After(service.LastHeartbeat.Add(duration).Add(1 * time.Second)) {
+						deadServices = append(deadServices, struct {
+							Path string
+							Id   string
+							Ind  int
+						}{
+							Path: path,
+							Id:   service.ServiceId,
+							Ind:  ind,
+						})
+					}
+				}
+			}
+
+			for _, val := range deadServices {
+				delete(r.ServiceIdTable, val.Id)
+				r.PathTable[val.Path][val.Ind] = nil
+				r.PathTable[val.Path] = append(r.PathTable[val.Path][:val.Ind], r.PathTable[val.Path][val.Ind+1:]...)
 			}
 		}
-	}
-
-	for _, val := range deadServices {
-		delete(r.ServiceIdTable, val.Id)
-		r.PathTable[val.Path][val.Ind] = nil
-		r.PathTable[val.Path] = append(r.PathTable[val.Path][:val.Ind], r.PathTable[val.Path][val.Ind+1:]...)
 	}
 }
 
 func InitInMemoryRegistry(clock utils.Clock) Registry {
-	return &InMemoryRegistry{PathTable: make(map[string][]*ServiceInfo), Clock: clock}
+	return &InMemoryRegistry{PathTable: make(map[string][]*ServiceInfo), Clock: clock, ServiceIdTable: make(map[string]*ServiceInfo)}
 }

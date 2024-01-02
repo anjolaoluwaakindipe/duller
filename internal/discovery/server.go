@@ -23,7 +23,7 @@ type RegistrySettings struct {
 }
 
 // InitRegistryServer initiates a TCP server and accepts connections for the registry
-func InitRegistryServer(balancer balancer.LoadBalancer, rs RegistrySettings, registry Registry, ctx context.Context, status chan<- bool) error {
+func InitRegistryServer(balancer balancer.LoadBalancer, rs RegistrySettings, registry service.Registry, ctx context.Context, status chan<- bool) error {
 	tcpServer, err := net.Listen(rs.REGISTRY_TYPE, rs.REGISTRY_HOST+":"+rs.REGISTRY_PORT)
 	fmt.Println(err)
 	if err != nil {
@@ -63,7 +63,7 @@ func InitRegistryServer(balancer balancer.LoadBalancer, rs RegistrySettings, reg
 }
 
 // HandleRequest handles every incoming request. Intended to be used in a seaparate goroutine.
-func HandleRequest(conn net.Conn, registry Registry, balancer balancer.LoadBalancer) {
+func HandleRequest(conn net.Conn, registry service.Registry, balancer balancer.LoadBalancer) {
 	decoder := json.NewDecoder(conn)
 	response := RegistryResponse{Code: 0}
 
