@@ -45,7 +45,6 @@ func Test_HandleRequest(t *testing.T) {
 	t.Run("When a valid registerServiceMsg message is sent through a connection SHOULD send an okay message through the same connection", func(t *testing.T) {
 		registry := service.InitInMemoryRegistry(utils.NewClock())
 		testServer, testClient := net.Pipe()
-		defer testClient.Close()
 		loadBalancer := balancer.NewRoundRobinLoadBalancer(registry)
 
 		go func(con net.Conn) {
@@ -69,6 +68,7 @@ func Test_HandleRequest(t *testing.T) {
 		json.Unmarshal(response, result)
 
 		assert.NotNil(t, result)
+		testClient.Close()
 	})
 
 	t.Run("When a valid ", func(t *testing.T) {
