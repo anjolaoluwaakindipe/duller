@@ -17,7 +17,7 @@ func (r *Routes) RegisterMessage() func(wr http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (r *Routes) GetServiceMessageMessage() func(wr http.ResponseWriter, r *http.Request) {
+func (r *Routes) GetServicesMessageMessage() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
 	}
 }
@@ -25,6 +25,9 @@ func (r *Routes) GetServiceMessageMessage() func(wr http.ResponseWriter, r *http
 func (r *Routes) ShowServicesMessage() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
 	}
+}
+
+func messageHandler(message string) {
 }
 
 func InitRoutes() *Routes {
