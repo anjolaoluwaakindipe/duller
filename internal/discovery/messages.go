@@ -10,10 +10,11 @@ const (
 	getAddressMsg      = "getAddressMsg"
 )
 
-type RegisterServiceMessage struct {
-	ServiceName string `json:"serverName"`
-	Path        string `json:"path"`
-	Address     string `json:"address"`
+type HeartBeatMessage struct {
+	ServiceId string `json:"serviceId"`
+	Path      string `json:"path"`
+	IP        string `json:"ip"`
+	Port      stirng `json:"port"`
 }
 
 type GetAddressMessage struct {

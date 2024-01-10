@@ -6,31 +6,32 @@ import (
 
 	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
+	"github.com/gorilla/mux"
 )
 
-type Routes struct {
-	registry service.Registry
+type MuxRouter struct {
 	balancer balancer.LoadBalancer
+	registry service.Registry
 }
 
-func (rt *Routes) RegisterMessage() func(wr http.ResponseWriter, r *http.Request) {
+func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
-		var message RegisterServiceMessage
+		var message HeartBeatMessage
 
 		err := json.NewDecoder(r.Body).Decode(&message)
 		if err != nil {
 			wr.WriteHeader(http.StatusBadRequest)
 		}
 
-		if err := rt.registry.RegisterService(service.ServiceInfo{ServiceId: message.ServiceName, Path: message.Path}); err != nil {
+		if err := rt.registry.RegisterService(service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}); err != nil {
 			wr.WriteHeader(http.StatusInternalServerError)
 		}
 	}
 }
 
-func (rt *Routes) GetServicesMessageMessage() func(wr http.ResponseWriter, r *http.Request) {
+func (rt *MuxRouter) GetServiceMessage() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
-		var message GetAddressMessage
+		var message GetServiceMessage
 		err := json.NewDecoder(r.Body).Decode(&message)
 		if err != nil {
 			wr.WriteHeader(http.StatusBadRequest)
@@ -41,21 +42,27 @@ func (rt *Routes) GetServicesMessageMessage() func(wr http.ResponseWriter, r *ht
 			wr.WriteHeader(http.StatusBadRequest)
 		}
 
-		dataMap := make(map[string]interface{})
-		dataMap["address"] = "http://" + serviceInfo.IP + ":" + serviceInfo.Port
-		response, _ := json.Marshal(dataMap)
-		wr.Write(response)
+		json.NewEncoder(wr).Encode(serviceInfo)
 	}
 }
 
-func (rt *Routes) ShowServicesMessage() func(wr http.ResponseWriter, r *http.Request) {
+func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func messageHandler(message string) {
+func (rt *MuxRouter) SetupRoutes() http.Handler {
+	router := mux.NewRouter()
+	router.HandleFunc("heartbeat", rt.SendHeartBeat()).Methods("POST")
+	router.HandleFunc("getservice/:path", rt.GetServiceMessage()).Methods("GET")
+
+	return router
 }
 
-func InitRoutes() *Routes {
-	return &Routes{}
+type Router interface {
+	SetupRoutes() http.Handler
+}
+
+func CreateMuxRouter(balancer balancer.LoadBalancer, registry service.Registry) *MuxRouter {
+	return &MuxRouter{balancer: balancer, registry: registry}
 }
