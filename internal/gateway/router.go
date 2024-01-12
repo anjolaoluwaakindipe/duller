@@ -29,7 +29,7 @@ type MuxRouter struct {
 
 // RegisterRoutes registers all handlers needed for the gateway
 func (mr *MuxRouter) RegisterRoutes() {
-	mr.router.HandleFunc("/{path}", mr.GetPath(mr.proxyRequest)).Methods("GET")
+	mr.router.HandleFunc("/{path}", mr.GetPath(utils.ProxyRequest)).Methods("GET")
 	mr.router.Use(mux.CORSMethodMiddleware(mr.router))
 }
 
@@ -65,7 +65,6 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 		}
 
 		proxy, err := proxyfunc(address)
-
 		if err != nil {
 			log.Printf("address of discovered service is invalid : %v", err)
 			return
@@ -79,7 +78,6 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 // for a requested path
 func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
 	conn, err := net.Dial("tcp", mr.discoveryAddress)
-
 	if err != nil {
 		return "", http.StatusInternalServerError, err
 	}
@@ -87,7 +85,7 @@ func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
 
 	message := discovery.Message{
 		Type: "getAddressMsg",
-		Data: discovery.GetAddressMessage{Path: path},
+		Data: discovery.GetServiceMessage{Path: path},
 	}
 
 	jsonMessage, _ := json.Marshal(message)
@@ -115,15 +113,6 @@ func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
 	}
 
 	return info.Address, http.StatusOK, nil
-}
-
-// proxyRequest takes in a targetUrl and proxies the entire request to that service
-func (mr *MuxRouter) proxyRequest(targetUrl string) (*httputil.ReverseProxy, error) {
-	url, err := url.Parse(targetUrl)
-	if err != nil {
-		return nil, err
-	}
-	return httputil.NewSingleHostReverseProxy(url), nil
 }
 
 func (mr *MuxRouter) GetRouter() http.Handler {

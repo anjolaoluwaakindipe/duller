@@ -14,10 +14,10 @@ type HeartBeatMessage struct {
 	ServiceId string `json:"serviceId"`
 	Path      string `json:"path"`
 	IP        string `json:"ip"`
-	Port      stirng `json:"port"`
+	Port      string `json:"port"`
 }
 
-type GetAddressMessage struct {
+type GetServiceMessage struct {
 	Path string `json:"path"`
 }
 
