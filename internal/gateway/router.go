@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"

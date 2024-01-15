@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"net/http"
 	"net/http/httputil"
 	"net/url"
 )
@@ -13,8 +12,4 @@ func ProxyRequest(targetUrl string) (*httputil.ReverseProxy, error) {
 		return nil, err
 	}
 	return httputil.NewSingleHostReverseProxy(url), nil
-}
-
-func (mr *MuxRouter) GetRouter() http.Handler {
-	return mr.router
 }

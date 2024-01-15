@@ -1,78 +1,111 @@
 package client
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
-	"net"
+	"net/http"
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
 )
 
 type DiscoveryClient struct {
-	ServerName string
-	Path       string
-	Address    string
+	heartbeatInterval time.Duration
+	discoveryPort     string
+	discoveryIP       string
+	serviceId         string
+	path              string
+	ip                string
+	port              string
+	heartbeatPath     string
 }
 
-func (dc DiscoveryClient) SendHeartBeat(interval time.Duration, serverLocation string) {
+// SendHearbeat sends a hearbeat message to a servcie discovery server
+// using the the properties contained in the DiscoveryClient. Logs out any
+// error encoutered while sending a heartbeat.
+//
+// Note: This function in intended to be used within a goroutine.
+func (dc DiscoveryClient) SendHeartBeat(ctx context.Context) {
+	ticker := time.NewTicker(dc.heartbeatInterval)
+	defer ticker.Stop()
 	for {
-		conn, err := net.Dial("tcp", serverLocation)
-		if err != nil {
-			log.Println("Error connecting to server:", err)
+		select {
+		case <-ctx.Done():
 			return
-		}
-		defer conn.Close()
-		message := discovery.Message{
-			Type: "registerServiceMsg",
-			Data: discovery.RegisterServiceMessage{
-				ServiceName: dc.ServerName,
-				Path:        dc.Path,
-				Address:     dc.Address,
-			},
-		}
-		jsonMessage, _ := json.Marshal(message)
-		_, err = conn.Write(jsonMessage)
-		if err != nil {
-			log.Println("Error sending JSON message to server:", err)
-			return
-		}
 
-		decoder, _ := io.ReadAll(conn)
+		case <-ticker.C:
+			message := discovery.HeartBeatMessage{
+				ServiceId: dc.serviceId,
+				Path:      dc.path,
+				IP:        dc.ip,
+				Port:      dc.port,
+			}
+			jsonMessage, err := json.Marshal(message)
+			if err != nil {
+				log.Println("Error occured when parsing heartbeat to json: ", err)
+			}
 
-		fmt.Println("Sent JSON message to server:", string(decoder))
-		time.Sleep(interval)
+			response, err := http.Post("http://"+dc.discoveryIP+":"+dc.discoveryPort+"/"+dc.heartbeatPath, "application/json", bytes.NewBuffer(jsonMessage))
+			if err != nil {
+				log.Println("Error occured when sending heartbeat: ", err)
+			}
+
+			if (response.StatusCode != http.StatusOK) && (response.StatusCode != http.StatusCreated) {
+				body, _ := io.ReadAll(response.Body)
+				log.Printf("Error response from discovery server with status code %v: \n %v \n", response.StatusCode, string(body))
+			}
+		}
 	}
 }
 
-type DiscoveryClientBuilder struct {
-	discoveryClient DiscoveryClient
-}
-
-func (dcb *DiscoveryClientBuilder) SetServerName(serverName string) *DiscoveryClientBuilder {
-	dcb.discoveryClient.ServerName = serverName
-	return dcb
-}
-
-func (dcb *DiscoveryClientBuilder) SetPath(path string) *DiscoveryClientBuilder {
-	dcb.discoveryClient.Path = path
-	return dcb
-}
-
-func (dcb *DiscoveryClientBuilder) SetAddress(address string) *DiscoveryClientBuilder {
-	dcb.discoveryClient.Address = address
-	return dcb
-}
-
-func (dcb DiscoveryClientBuilder) Build() *DiscoveryClient {
-	return &dcb.discoveryClient
-}
-
-func InitDiscoveryClient() *DiscoveryClientBuilder {
-	client := DiscoveryClient{}
-	return &DiscoveryClientBuilder{
-		discoveryClient: client,
+// WithHeartbeatInterval sets the HeartbeatInterval for the DiscoveryClient.
+func WithHeartbeatInterval(interval time.Duration) DiscoveryClientOptions {
+	return func(dc *DiscoveryClient) {
+		dc.heartbeatInterval = interval
 	}
+}
+
+// WithHeartbeatPath sets the HeartbeatPath for the DiscoveryClient
+func WithHeartbeatPath(path string) DiscoveryClientOptions {
+	return func(dc *DiscoveryClient) {
+		dc.heartbeatPath = path
+	}
+}
+
+// WithDiscoveryPort sets the DiscoveryPort for the DiscoveryClient
+func WithDiscoveryPort(port string) DiscoveryClientOptions {
+	return func(dc *DiscoveryClient) {
+		dc.discoveryPort = port
+	}
+}
+
+// WithDiscoveryIP sets the DiscoveryIP for the DiscoveryClient
+func WithDiscoveryIP(ip string) DiscoveryClientOptions {
+	return func(dc *DiscoveryClient) {
+		dc.discoveryIP = ip
+	}
+}
+
+// DiscoveryClientOptions is an option fucntion type for any DiscoveryClient
+type DiscoveryClientOptions = func(dc *DiscoveryClient)
+
+// NewDiscoveryClient creates a new service discovery client instance for sending heartbeats to a service
+// discovery server
+//
+// Note: Default values for the client include
+//
+//	discoveryIP: "localhost"
+//	discoveryPort: "9876",
+//	heartbeatPath: "/heartbeat"
+//	heartbeatInterval: 15 * time.Second
+func NewDiscoveryClient(serviceId string, path string, ip string, port string, opts ...DiscoveryClientOptions) (DiscoveryClient, error) {
+	dc := DiscoveryClient{serviceId: serviceId, path: path, ip: ip, port: port, discoveryIP: "localhost", discoveryPort: "9876", heartbeatPath: "/heartbeat", heartbeatInterval: 15 * time.Second}
+	for _, opt := range opts {
+		opt(&dc)
+	}
+
+	return dc, nil
 }
