@@ -9,11 +9,13 @@ import (
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
 type MuxRouter struct {
 	balancer balancer.LoadBalancer
 	registry service.Registry
+	upgrader websocket.Upgrader
 }
 
 func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Request) {
@@ -60,6 +62,14 @@ func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request
 	}
 }
 
+func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Request) {
+	return func(wr http.ResponseWriter, r *http.Request) {
+		conn, _ := rt.upgrader.Upgrade(wr, r, nil)
+
+		newClient := socketClient{conn: conn}
+	}
+}
+
 func (rt *MuxRouter) SetupRoutes() http.Handler {
 	router := mux.NewRouter()
 	router.HandleFunc("/services", rt.ShowServices()).Methods("GET")
@@ -74,5 +84,13 @@ type Router interface {
 }
 
 func CreateMuxRouter(balancer balancer.LoadBalancer, registry service.Registry) Router {
-	return &MuxRouter{balancer: balancer, registry: registry}
+	return &MuxRouter{balancer: balancer, registry: registry, upgrader: websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}}
+}
+
+type socketClient struct {
+	conn *websocket.Conn
+	send chan []byte
 }
