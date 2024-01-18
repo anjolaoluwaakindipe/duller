@@ -16,6 +16,7 @@ type MuxRouter struct {
 	balancer balancer.LoadBalancer
 	registry service.Registry
 	upgrader websocket.Upgrader
+	hub      *hub
 }
 
 func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Request) {
@@ -67,6 +68,7 @@ func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Reque
 		conn, _ := rt.upgrader.Upgrade(wr, r, nil)
 
 		newClient := socketClient{conn: conn}
+		rt.hub.register <- &newClient
 	}
 }
 
@@ -84,13 +86,47 @@ type Router interface {
 }
 
 func CreateMuxRouter(balancer balancer.LoadBalancer, registry service.Registry) Router {
-	return &MuxRouter{balancer: balancer, registry: registry, upgrader: websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}}
+	return &MuxRouter{
+		balancer: balancer, registry: registry, upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
+		hub: &hub{socketClients: make(map[*socketClient]bool), broadcaster: make(chan []byte)},
+	}
 }
 
 type socketClient struct {
 	conn *websocket.Conn
 	send chan []byte
+}
+
+type hub struct {
+	socketClients map[*socketClient]bool
+	broadcaster   chan []byte
+	register      chan *socketClient
+	unregister    chan *socketClient
+}
+
+func (h *hub) removeClient(client *socketClient) {
+	delete(h.socketClients, client)
+	close(client.send)
+}
+
+func (h *hub) run() {
+	for {
+		select {
+		case client := <-h.register:
+			h.socketClients[client] = true
+		case client := <-h.unregister:
+			h.removeClient(client)
+		case message := <-h.broadcaster:
+			for client := range h.socketClients {
+				select {
+				case client.send <- message:
+				default:
+					h.removeClient(client)
+				}
+			}
+		}
+	}
 }
