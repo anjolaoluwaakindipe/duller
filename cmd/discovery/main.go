@@ -43,7 +43,7 @@ func main() {
 		REGISTRY_PORT:      *rport,
 		REGISTRY_TYPE:      REGISTRY_TYPE,
 		HEARTBEAT_INTERVAL: rheartbeat,
-	}, serviceRegistry, ctx, discovery.CreateMuxRouter)
+	}, serviceRegistry, ctx, discovery.NewMuxRouter)
 
 	gatewayRouter := routing.InitMuxRouter(fmt.Sprintf("%v:%v", *rhost, *rport))
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -30,10 +31,10 @@ func InitGateway(router Router, settings GatewaySetting) {
 	}
 
 	go func() {
-		log.Printf("Gateway server starting on port %v \n", settings.GATEWAY_PORT)
+		slog.Info(fmt.Sprintf("Gateway server starting on port %v... \n", settings.GATEWAY_PORT))
 		err := server.ListenAndServe()
-		if err != nil {
-			log.Printf("Gateway Server could not be started: %v \n", err)
+		if err != http.ErrServerClosed {
+			slog.Error("Gateway Server could not be started: %v \n", err)
 		}
 	}()
 
@@ -48,6 +49,6 @@ func InitGateway(router Router, settings GatewaySetting) {
 
 	server.Shutdown(ctx)
 
-	log.Println("Shutting down gateway server")
+	slog.Info("Shutting down gateway server")
 	os.Exit(0)
 }

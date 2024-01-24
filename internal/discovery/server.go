@@ -2,7 +2,8 @@ package discovery
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,27 +35,18 @@ func InitRegistryServer(balancer balancer.LoadBalancer, rs RegistrySettings, reg
 
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			log.Println(err)
+		slog.Info(fmt.Sprintf("Starting Service Discovery Server on port %v... \n", rs.REGISTRY_PORT))
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			slog.Error("Error starting Service Discovery Server: %v", err)
 		}
 	}()
 
 	c := make(chan os.Signal, 1)
-	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
-	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
 	signal.Notify(c, os.Interrupt)
 
-	// Block until we receive our signal.
 	<-c
 
-	// Create a deadline to wait for.
-	// Doesn't block if no connections, but will otherwise wait
-	// until the timeout deadline.
 	server.Shutdown(ctx)
-	// Optionally, you could run srv.Shutdown in a goroutine and block on
-	// <-ctx.Done() if your application should wait for other services
-	// to finalize based on context cancellation.
-	log.Println("shutting down")
-	os.Exit(0)
+	slog.Info("Shutting down Service Discovery Server...")
 	return nil
 }
