@@ -33,5 +33,6 @@ func main() {
 		HeartBeatInterval: heartBeatInterval,
 		RegistryLocation:  *dlocation,
 	}
-	client.InitServer(clientServerSettings)
+
+	client.InitClientServer(clientServerSettings)
 }
