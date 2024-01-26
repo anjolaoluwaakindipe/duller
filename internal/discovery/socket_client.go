@@ -1,5 +1,13 @@
 package discovery
 
+import (
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+// socketClient is a struct object responsible
+// for handling client connections involved in a hub
 type socketClient struct {
 	conn          *websocket.Conn
 	send          chan []byte
@@ -7,6 +15,7 @@ type socketClient struct {
 	writeWaitTime time.Duration
 }
 
+// newSocketClient is a constructor function for a new socketClient
 func newSocketClient(h hub, conn *websocket.Conn, opts ...socketClientOpts) socketClient {
 	client := socketClient{hub: h, conn: conn, send: make(chan []byte, 256)}
 
@@ -17,14 +26,20 @@ func newSocketClient(h hub, conn *websocket.Conn, opts ...socketClientOpts) sock
 	return client
 }
 
+// socketClientOpts is an option function for creating
+// new socketClients
 type socketClientOpts func(socketClient *socketClient)
 
+// WithWriteWaitTimes is a socketClientOpts that hels set the
+// writeWaitTime for a socketClient upon creation
 func WithWriteWaitTime(duration time.Duration) socketClientOpts {
 	return func(socketClient *socketClient) {
 		socketClient.writeWaitTime = duration
 	}
 }
 
+// readPipe facilitates reading messages broadcasted from the hub and sending
+// messages through the websocket connection to the user
 func (sc *socketClient) readPipe() {
 	defer func() {
 		sc.hub.unregister <- sc
