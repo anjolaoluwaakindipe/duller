@@ -18,8 +18,10 @@ type Router interface {
 
 // MuxRouter this is a Gorilla Mux router implementation of the router needed for the gateway
 type MuxRouter struct {
-	router           *mux.Router
-	discoveryAddress string
+	router        *mux.Router
+	discoveryHost string
+	discoveryPort string
+	discoveryPath string
 }
 
 // RegisterRoutes registers all handlers needed for the gateway
@@ -49,8 +51,8 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 
 		utils.MakeUrlPathValid(&path)
 
-		r.URL.Path = "/get-service/" + r.URL.Path
-		proxy, err := proxyfunc(mr.discoveryAddress)
+		r.URL.Path = mr.discoveryPath + r.URL.Path
+		proxy, err := proxyfunc("http://" + mr.discoveryHost + ":" + mr.discoveryPort)
 		if err != nil {
 			log.Printf("address of discovered service is invalid : %v", err)
 			return
@@ -64,9 +66,37 @@ func (mr *MuxRouter) GetRouter() http.Handler {
 	return mr.router
 }
 
-func InitMuxRouter(discoveryAddress string) Router {
-	return &MuxRouter{
-		router:           mux.NewRouter(),
-		discoveryAddress: discoveryAddress,
+type MuxRouterOpts func(*MuxRouter)
+
+func WithDiscoveryHost(discoveryAddress string) MuxRouterOpts {
+	return func(mr *MuxRouter) {
+		mr.discoveryHost = discoveryAddress
 	}
+}
+
+func WithDiscoveryPort(discoveryPort string) MuxRouterOpts {
+	return func(mr *MuxRouter) {
+		mr.discoveryPort = discoveryPort
+	}
+}
+
+func WithDiscoveryPath(discoveryPath string) MuxRouterOpts {
+	return func(mr *MuxRouter) {
+		mr.discoveryPath = discoveryPath
+	}
+}
+
+func InitMuxRouter(opts ...MuxRouterOpts) Router {
+	mr := &MuxRouter{
+		router:        mux.NewRouter(),
+		discoveryPort: "9876",
+		discoveryHost: "localhost",
+		discoveryPath: "/get-service/",
+	}
+
+	for _, opt := range opts {
+		opt(mr)
+	}
+
+	return mr
 }
