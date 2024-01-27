@@ -45,7 +45,7 @@ func main() {
 		HEARTBEAT_INTERVAL: rheartbeat,
 	}, serviceRegistry, ctx, discovery.NewMuxRouter)
 
-	gatewayRouter := routing.InitMuxRouter(fmt.Sprintf("%v:%v", *rhost, *rport))
+	gatewayRouter := routing.InitMuxRouter(fmt.Sprintf("http://%v:%v", *rhost, *rport))
 
 	routing.InitGateway(gatewayRouter, routing.GatewaySetting{
 		GATEWAY_PORT:           *gport,

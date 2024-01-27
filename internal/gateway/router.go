@@ -2,16 +2,12 @@ package gateway
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 	"github.com/gorilla/mux"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Router requires some sort of implementation
@@ -28,7 +24,7 @@ type MuxRouter struct {
 
 // RegisterRoutes registers all handlers needed for the gateway
 func (mr *MuxRouter) RegisterRoutes() {
-	mr.router.HandleFunc("/{path}", mr.GetPath(utils.ProxyRequest)).Methods("GET")
+	mr.router.HandleFunc("/{path}", mr.GetPath(utils.ProxyRequest))
 	mr.router.Use(mux.CORSMethodMiddleware(mr.router))
 }
 
@@ -53,17 +49,8 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 
 		utils.MakeUrlPathValid(&path)
 
-		address, status, getAddErr := mr.GetAddress(path)
-
-		if getAddErr != nil {
-			w.WriteHeader(status)
-			response := GatewayErrorMessage{Message: getAddErr.Error(), Status: status}
-			jsonResponse, _ := json.Marshal(&response)
-			w.Write(jsonResponse)
-			return
-		}
-
-		proxy, err := proxyfunc(address)
+		r.URL.Path = "/get-service/" + r.URL.Path
+		proxy, err := proxyfunc(mr.discoveryAddress)
 		if err != nil {
 			log.Printf("address of discovered service is invalid : %v", err)
 			return
@@ -71,47 +58,6 @@ func (mr *MuxRouter) GetPath(proxyfunc func(string) (*httputil.ReverseProxy, err
 
 		proxy.ServeHTTP(w, r)
 	}
-}
-
-// GetAddress messages a discovery server to get the appropriate service address
-// for a requested path
-func (mr *MuxRouter) GetAddress(path string) (string, int, error) {
-	conn, err := net.Dial("tcp", mr.discoveryAddress)
-	if err != nil {
-		return "", http.StatusInternalServerError, err
-	}
-	defer conn.Close()
-
-	message := discovery.Message{
-		Type: "getAddressMsg",
-		Data: discovery.GetServiceMessage{Path: path},
-	}
-
-	jsonMessage, _ := json.Marshal(message)
-
-	if _, err := conn.Write(jsonMessage); err != nil {
-		return "", http.StatusInternalServerError, fmt.Errorf("error while sending path to registry")
-	}
-
-	decoder := json.NewDecoder(conn)
-
-	var response discovery.RegistryResponse
-
-	decoder.Decode(&response)
-
-	if response.Code != 0 {
-		return "", http.StatusNotFound, fmt.Errorf(response.Message)
-	}
-
-	var info struct {
-		Address string `json:"address"`
-	}
-
-	if err := mapstructure.Decode(response.Data, &info); err != nil {
-		return "", http.StatusInternalServerError, fmt.Errorf("could not decode registry server response data")
-	}
-
-	return info.Address, http.StatusOK, nil
 }
 
 func (mr *MuxRouter) GetRouter() http.Handler {
