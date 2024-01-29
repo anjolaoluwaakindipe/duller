@@ -14,6 +14,7 @@ type Runner interface {
 	Name() string
 	Init([]string) error
 	Run() error
+	UsageInfo()
 }
 
 // root takes in os command line arguments and invokes a subset command
@@ -30,8 +31,6 @@ func root(args []string) error {
 		gateway.NewGateCommand(),
 	}
 
-	command := discovery.NewDiscCommand()
-	command.UsageInfo()
 	for _, subCmd := range subCmds {
 		if subCmd.Name() == subCommand {
 			if err := subCmd.Init(args[1:]); err != nil {
@@ -42,6 +41,10 @@ func root(args []string) error {
 				return err
 			}
 		}
+	}
+
+	for _, subCmd := range subCmds {
+		subCmd.UsageInfo()
 	}
 
 	return fmt.Errorf("Unknown subcommand")

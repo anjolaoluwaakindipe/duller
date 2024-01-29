@@ -25,17 +25,22 @@ func (gc *GateCommand) Name() string {
 
 func (gc *GateCommand) Init(args []string) error {
 	gc.fs.Usage = func() {
-		fmt.Printf("disc usage: %s disc [OPTIONS] argument ...\n", os.Args[0])
+		fmt.Printf("gate usage: %s gate [OPTIONS] argument ...\n", os.Args[0])
 		gc.fs.PrintDefaults()
 		fmt.Printf("\n\n")
 	}
-	flag.DurationVar(&gc.gatewayHearbeatInterval, "rheartbeat", utils.HEARTBEAT_INTERVAL, fmt.Sprintf("The interval of heartbeats expected. The default interval is %s", utils.HEARTBEAT_INTERVAL))
-	gc.discoveryServicePath = *flag.String("dservice_path", utils.DISCOVERY_SERVICE_PATH, fmt.Sprintf("Path for proxying users. Default path is %v .", utils.DISCOVERY_SERVICE_PATH))
-	flag.DurationVar(&gc.gatewayGracefullWait, "gwait", utils.GATEWAY_GRACEFULL_WAIT, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
-	gc.gatewayPort = *flag.String("gport", utils.GATEWAY_PORT, fmt.Sprintf("The PORT number the gateway should run on. Default value is %v", utils.GATEWAY_PORT))
-	gc.discoveryPort = *flag.String("dport", utils.REGISTRY_PORT, fmt.Sprintf("The PORT number the discovery server is running on. Default value is %v", utils.REGISTRY_PORT))
-	gc.discoveryHost = *flag.String("dhost", utils.REGISTRY_HOST, fmt.Sprintf("The IP Address/Host of the discovery server. Default value is %v", utils.REGISTRY_HOST))
+	gc.fs.DurationVar(&gc.gatewayHearbeatInterval, "rheartbeat", utils.HEARTBEAT_INTERVAL, "The interval of heartbeats expected.")
+	gc.discoveryServicePath = *gc.fs.String("dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path for proxying users.")
+	gc.fs.DurationVar(&gc.gatewayGracefullWait, "gwait", utils.GATEWAY_GRACEFULL_WAIT, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	gc.gatewayPort = *gc.fs.String("gport", utils.GATEWAY_PORT, "The PORT number the gateway should run on.")
+	gc.discoveryPort = *gc.fs.String("dport", utils.REGISTRY_PORT, "The PORT number the discovery server is running on.")
+	gc.discoveryHost = *gc.fs.String("dhost", utils.REGISTRY_HOST, "The IP Address/Host of the discovery server.")
 	return gc.fs.Parse(args)
+}
+
+func (gc *GateCommand) UsageInfo() {
+	gc.Init([]string{})
+	gc.fs.Usage()
 }
 
 func (gc *GateCommand) Run() error {
