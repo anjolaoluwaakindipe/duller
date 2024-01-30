@@ -9,4 +9,4 @@ If you are interested in contributing please take a look at CONTRIBUTING.md
 ## FURTHER PLANS
 
 1. Create multiple clients for other programming languages. Will need help contributing
-2. Add health monitoring and potential logging service statuses
+2. Add health monitoring and logging features.
