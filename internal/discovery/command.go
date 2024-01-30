@@ -24,6 +24,7 @@ type DiscCommand struct {
 	discoveryHeartbeatInterval time.Duration
 }
 
+// Name returns the name of the command
 func (dc *DiscCommand) Name() string {
 	return dc.fs.Name()
 }
