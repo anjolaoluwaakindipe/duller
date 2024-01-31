@@ -12,8 +12,9 @@ type Registry interface {
 	// GetServiceById takes in an ID  and returns its corresponding service.
 	GetServiceById(serviceId string) (*ServiceInfo, error)
 	// GetServiceByPath takes in a path returns all services associated with that given path.
-	// Note: If an empty string is paseed as a serviceId then a service wi
-	// that this could utilize load-balancing technique to distribute service access
+	// Note: an error is return if the path does not exist. A path could exist and not have
+	// any service tied to it thus the slice return can still have a length of zero even if there
+	// is no error
 	GetServicesByPath(path string) ([]*ServiceInfo, error)
 	// Returns all available services in Registry
 	GetServices() []*ServiceInfo
@@ -25,8 +26,8 @@ type Registry interface {
 	// UpdateServiceCurrentUse is used to increment the CurrentUse of a service until it
 	// reaches its weighted use value
 	UpdateServiceCurrentUse(serviceId string)
-	// IsServiceWeightFull checks if the CurrentUse of a service has reached it weighted value
+	// IsServiceWeightFull checks if the CurrentUse of a service has reached its weighted value
 	IsServiceWeightFull(serviceId string) (bool, error)
-	// Resets the current use of the specified service
+	// ResetCurrentUse resets the current use of the specified service to 0
 	ResetCurrentUse(serviceId string)
 }
