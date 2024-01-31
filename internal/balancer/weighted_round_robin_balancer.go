@@ -37,7 +37,34 @@ func (wrb *WeightedRoundRobin) GetNextService(path string) (*service.ServiceInfo
 		return nil, err
 	}
 
+	if len(services) == 0 {
+		return nil, nil
+	}
+
+	var selectedService *service.ServiceInfo = nil
+
 	for i := range services {
 		service := services[i]
+		isFull, err := wrb.registry.IsServiceWeightFull(service.ServiceId)
+		if err != nil {
+			return nil, err
+		}
+		if !isFull {
+			wrb.registry.UpdateServiceCurrentUse(service.ServiceId)
+			selectedService = service
+			break
+		}
 	}
+
+	if selectedService == nil {
+		for i := range services {
+			service := services[i]
+			wrb.registry.ResetCurrentUse(service.ServiceId)
+		}
+		firstService := services[0]
+		selectedService = firstService
+		wrb.registry.UpdateServiceCurrentUse(firstService.ServiceId)
+	}
+
+	return selectedService, nil
 }

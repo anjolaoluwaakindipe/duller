@@ -22,4 +22,11 @@ type Registry interface {
 	// DeregisterService a service from registry given a path and serviceId
 	// returns an error if an invalid path or serviceId is given
 	DeregisterService(path string, serviceId string) error
+	// UpdateServiceCurrentUse is used to increment the CurrentUse of a service until it
+	// reaches its weighted use value
+	UpdateServiceCurrentUse(serviceId string)
+	// IsServiceWeightFull checks if the CurrentUse of a service has reached it weighted value
+	IsServiceWeightFull(serviceId string) (bool, error)
+	// Resets the current use of the specified service
+	ResetCurrentUse(serviceId string)
 }

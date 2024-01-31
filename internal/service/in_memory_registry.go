@@ -106,6 +106,35 @@ func (r *InMemoryRegistry) UpdateServiceCurrentUse(serviceId string) {
 	return
 }
 
+func (r *InMemoryRegistry) ResetCurrentUse(serviceId string) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	service, exists := r.ServiceIdTable[serviceId]
+
+	if !exists {
+		return
+	}
+
+	service.CurrentUse = 0
+}
+
+func (r *InMemoryRegistry) IsServiceWeightFull(serviceId string) (bool, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	service, exists := r.ServiceIdTable[serviceId]
+
+	if !exists {
+		return false, fmt.Errorf("service id does not exist in registry")
+	}
+
+	if service.CurrentUse == service.WeightedUse {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (r *InMemoryRegistry) GetServicesByPath(path string) ([]*ServiceInfo, error) {
 	servicePath, err := r.GetPathFromRequest(path)
 	if err != nil {
