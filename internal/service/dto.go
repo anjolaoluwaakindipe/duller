@@ -9,4 +9,6 @@ type ServiceInfo struct {
 	Port          string
 	Path          string
 	IsHealthy     bool
+	CurrentUse    int
+	WeightedUse   int
 }

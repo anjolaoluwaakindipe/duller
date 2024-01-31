@@ -6,13 +6,13 @@ import (
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
 )
 
-type RoundRobinLoadBalancer struct {
+type RoundRobin struct {
 	registry service.Registry
 	pathMap  map[string]int
 	mutex    sync.Mutex
 }
 
-func (lb *RoundRobinLoadBalancer) AddService(service *service.ServiceInfo) error {
+func (lb *RoundRobin) AddService(service *service.ServiceInfo) error {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
 	if err := lb.registry.RegisterService(*service); err != nil {
@@ -21,7 +21,7 @@ func (lb *RoundRobinLoadBalancer) AddService(service *service.ServiceInfo) error
 	return nil
 }
 
-func (lb *RoundRobinLoadBalancer) RemoveService(service *service.ServiceInfo) error {
+func (lb *RoundRobin) RemoveService(service *service.ServiceInfo) error {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
 	if err := lb.registry.DeregisterService(service.Path, service.ServiceId); err != nil {
@@ -30,7 +30,7 @@ func (lb *RoundRobinLoadBalancer) RemoveService(service *service.ServiceInfo) er
 	return nil
 }
 
-func (lb *RoundRobinLoadBalancer) GetNextService(path string) (*service.ServiceInfo, error) {
+func (lb *RoundRobin) GetNextService(path string) (*service.ServiceInfo, error) {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
 	services, err := lb.registry.GetServicesByPath(path)
@@ -53,12 +53,12 @@ func (lb *RoundRobinLoadBalancer) GetNextService(path string) (*service.ServiceI
 	return service, nil
 }
 
-func (lb *RoundRobinLoadBalancer) GetRegitry() service.Registry {
+func (lb *RoundRobin) GetRegitry() service.Registry {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
 	return lb.registry
 }
 
 func NewRoundRobinLoadBalancer(registry service.Registry) LoadBalancer {
-	return &RoundRobinLoadBalancer{registry: registry, pathMap: make(map[string]int)}
+	return &RoundRobin{registry: registry, pathMap: make(map[string]int)}
 }

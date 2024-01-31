@@ -91,6 +91,21 @@ func (r *InMemoryRegistry) RegisterService(msg ServiceInfo) error {
 	return nil
 }
 
+func (r *InMemoryRegistry) UpdateServiceCurrentUse(serviceId string) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	service, exists := r.ServiceIdTable[serviceId]
+
+	if !exists {
+		return
+	}
+
+	if service.CurrentUse < service.WeightedUse {
+		service.CurrentUse += 1
+	}
+	return
+}
+
 func (r *InMemoryRegistry) GetServicesByPath(path string) ([]*ServiceInfo, error) {
 	servicePath, err := r.GetPathFromRequest(path)
 	if err != nil {
