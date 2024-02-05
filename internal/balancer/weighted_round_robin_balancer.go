@@ -68,3 +68,7 @@ func (wrb *WeightedRoundRobin) GetNextService(path string) (*service.ServiceInfo
 
 	return selectedService, nil
 }
+
+func NewWeightedRoundRobinLoadBalancer(registry service.Registry) LoadBalancer {
+	return &WeightedRoundRobin{registry: registry}
+}

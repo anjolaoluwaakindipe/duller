@@ -9,28 +9,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func StubFactory() (loadBalancer balancer.LoadBalancer, registry service.Registry, services []*service.ServiceInfo) {
+func stubFactory() (registry service.Registry, services []*service.ServiceInfo) {
 	registry = service.InitInMemoryRegistry(utils.NewClock())
-	loadBalancer = balancer.NewRoundRobinLoadBalancer(registry)
 
 	services = []*service.ServiceInfo{
 		{
-			Port:      "4000",
-			Path:      "/path1",
-			ServiceId: "server1",
-			IP:        "localhost",
+			Port:        "4000",
+			Path:        "/path1",
+			ServiceId:   "server1",
+			IP:          "localhost",
+			WeightedUse: 5,
 		},
 		{
-			Port:      "5000",
-			Path:      "/path1",
-			ServiceId: "server2",
-			IP:        "localhost",
+			Port:        "5000",
+			Path:        "/path1",
+			ServiceId:   "server2",
+			IP:          "localhost",
+			WeightedUse: 3,
 		},
 		{
-			Port:      "6000",
-			Path:      "/path1",
-			ServiceId: "server3",
-			IP:        "localhost",
+			Port:        "6000",
+			Path:        "/path1",
+			ServiceId:   "server3",
+			IP:          "localhost",
+			WeightedUse: 2,
 		},
 	}
 
@@ -43,7 +45,8 @@ func StubFactory() (loadBalancer balancer.LoadBalancer, registry service.Registr
 
 func Test_RoundRobinLoadBalancer_GetNextService(t *testing.T) {
 	t.Run("SHOULD return a service WHEN a valid path is given", func(t *testing.T) {
-		loadBalancer, _, _ := StubFactory()
+		registry, _ := stubFactory()
+		loadBalancer := balancer.NewRoundRobinLoadBalancer(registry)
 		service, err := loadBalancer.GetNextService("/path1")
 
 		assert.Nil(t, err)
@@ -51,7 +54,8 @@ func Test_RoundRobinLoadBalancer_GetNextService(t *testing.T) {
 	})
 
 	t.Run("SHOULD return nil and an error WHEN an invalid path is given", func(t *testing.T) {
-		loadBalancer, _, _ := StubFactory()
+		registry, _ := stubFactory()
+		loadBalancer := balancer.NewRoundRobinLoadBalancer(registry)
 		service, err := loadBalancer.GetNextService("/invalid")
 
 		assert.NotNil(t, err)
@@ -59,7 +63,8 @@ func Test_RoundRobinLoadBalancer_GetNextService(t *testing.T) {
 	})
 
 	t.Run("SHOULD cycle through all services WHEN given a valid path multiple times", func(t *testing.T) {
-		loadBalancer, _, services := StubFactory()
+		registry, services := stubFactory()
+		loadBalancer := balancer.NewRoundRobinLoadBalancer(registry)
 		for i := 0; i < len(services); i++ {
 
 			service, err := loadBalancer.GetNextService("/path1")
@@ -76,7 +81,8 @@ func Test_RoundRobinLoadBalancer_GetNextService(t *testing.T) {
 	})
 
 	t.Run("SHOULD prevent use of dead services WHEN given a valid path", func(t *testing.T) {
-		loadBalancer, registry, services := StubFactory()
+		registry, services := stubFactory()
+		loadBalancer := balancer.NewRoundRobinLoadBalancer(registry)
 
 		firstService, err := loadBalancer.GetNextService("/path1")
 		assert.Nil(t, err)

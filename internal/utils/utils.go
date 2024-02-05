@@ -1,12 +1,15 @@
 package utils
 
 func MakeUrlPathValid(str *string) {
-	val := *str
-	if val[0] != '/' {
+	if len(*str) == 0 {
+		return
+	}
+
+	if (*str)[0] != '/' {
 		*str = "/" + *str
 	}
-	for val[len(val)-1] == '/' {
+
+	for (*str)[len(*str)-1] == '/' {
 		*str = (*str)[:len(*str)-1]
 	}
 }
-
