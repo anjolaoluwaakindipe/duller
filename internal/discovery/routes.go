@@ -28,7 +28,7 @@ func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Reques
 			wr.WriteHeader(http.StatusBadRequest)
 		}
 
-		if err := rt.registry.RegisterService(service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}); err != nil {
+		if err := rt.registry.RegisterService(&service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}); err != nil {
 			wr.WriteHeader(http.StatusInternalServerError)
 		}
 	}

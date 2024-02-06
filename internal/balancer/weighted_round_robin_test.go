@@ -8,6 +8,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_WeightedRoundRobin_AddService(t *testing.T) {
+	t.Run("SHOULD return an error WHEN service added has weightedUse less than 1", func(t *testing.T) {
+		registry, _ := stubFactory()
+		loadBalancer := balancer.NewWeightedRoundRobinLoadBalancer(registry)
+
+		newService1 := service.ServiceInfo{
+			Path:        "/path2",
+			WeightedUse: -1,
+			ServiceId:   "service2",
+			Port:        "9999",
+			IP:          "000.00.0",
+		}
+
+		newService2 := service.ServiceInfo{
+			Path:      "/path2",
+			ServiceId: "service2",
+			Port:      "9999",
+			IP:        "000.00.0",
+		}
+
+		err := loadBalancer.AddService(&newService1)
+		assert.NotNil(t, err)
+
+		err = loadBalancer.AddService(&newService2)
+		assert.NotNil(t, err)
+	})
+}
+
 func Test_WeightedRoundRobin_GetNextService(t *testing.T) {
 	t.Run("SHOULD return a service WHEN given a valid path", func(t *testing.T) {
 		registry, _ := stubFactory()

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
+	"github.com/invopop/validation"
 )
 
 type WeightedRoundRobin struct {
@@ -11,10 +12,21 @@ type WeightedRoundRobin struct {
 	mutex    sync.Mutex
 }
 
+func (wrb *WeightedRoundRobin) validateService(service *service.ServiceInfo) error {
+	return validation.ValidateStruct(service, validation.Field(service.WeightedUse, validation.Required, validation.Min(1)))
+}
+
 func (wrb *WeightedRoundRobin) AddService(service *service.ServiceInfo) error {
 	wrb.mutex.Lock()
 	defer wrb.mutex.Unlock()
-	if err := wrb.registry.RegisterService(*service); err != nil {
+
+	valErr := wrb.validateService(service)
+
+	if valErr != nil {
+		return valErr
+	}
+
+	if err := wrb.registry.RegisterService(service); err != nil {
 		return err
 	}
 	return nil

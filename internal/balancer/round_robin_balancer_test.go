@@ -37,7 +37,7 @@ func stubFactory() (registry service.Registry, services []*service.ServiceInfo) 
 	}
 
 	for i := 0; i < len(services); i++ {
-		registry.RegisterService(*services[i])
+		registry.RegisterService(services[i])
 	}
 
 	return

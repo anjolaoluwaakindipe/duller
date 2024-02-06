@@ -15,7 +15,7 @@ type RoundRobin struct {
 func (lb *RoundRobin) AddService(service *service.ServiceInfo) error {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
-	if err := lb.registry.RegisterService(*service); err != nil {
+	if err := lb.registry.RegisterService(service); err != nil {
 		return err
 	}
 	return nil

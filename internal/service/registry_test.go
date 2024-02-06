@@ -44,7 +44,7 @@ func Test_RegisterService(t *testing.T) {
 
 		registry := service.InMemoryRegistry{PathTable: make(map[string][]*service.ServiceInfo), Clock: &FakeTime{}, ServiceIdTable: make(map[string]*service.ServiceInfo)}
 
-		if err := registry.RegisterService(newMessage); err != nil {
+		if err := registry.RegisterService(&newMessage); err != nil {
 			t.Error("Error while Registering Service")
 			return
 		}
@@ -63,11 +63,11 @@ func Test_RegisterService(t *testing.T) {
 	})
 
 	t.Run("SHOULD update a service WHEN a valid RegisterServiceMessage with a service that already exists is given", func(t *testing.T) {
-		newMessage := service.ServiceInfo{Path: "/hello", IP: "127.0.0.1", ServiceId: "server_1"}
+		newMessage := service.ServiceInfo{Path: "/hello", IP: "127.0.0.1", Port: "9990", ServiceId: "server_1"}
 
 		stubTime := &FakeTime{time.Now()}
 		registry := service.InMemoryRegistry{PathTable: make(map[string][]*service.ServiceInfo), Clock: stubTime, ServiceIdTable: make(map[string]*service.ServiceInfo)}
-		if err := registry.RegisterService(newMessage); err != nil {
+		if err := registry.RegisterService(&newMessage); err != nil {
 			t.Error("Error while Registering Service ")
 			return
 		}
@@ -82,7 +82,7 @@ func Test_RegisterService(t *testing.T) {
 
 		createdAt := service.LastHeartbeat
 
-		if err := registry.RegisterService(newMessage); err != nil {
+		if err := registry.RegisterService(&newMessage); err != nil {
 			t.Error("Error while Updating Service")
 			return
 		}

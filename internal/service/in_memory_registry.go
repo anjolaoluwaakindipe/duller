@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
+	"github.com/invopop/validation"
 )
 
 // InMemoryRegistry is an in memory implementation of the
@@ -58,9 +59,20 @@ func (r *InMemoryRegistry) SetServicePathRegex() {
 	r.servicPathRegex = "^(" + strings.Join(paths, "|") + ")"
 }
 
-func (r *InMemoryRegistry) RegisterService(msg ServiceInfo) error {
-	if len(strings.TrimSpace(msg.Path)) == 0 {
-		return fmt.Errorf("path field is empty")
+func (r *InMemoryRegistry) validateService(msg *ServiceInfo) error {
+	return validation.ValidateStruct(msg,
+		validation.Field(&msg.IP, validation.Required),
+		validation.Field(&msg.Port, validation.Required),
+		validation.Field(&msg.ServiceId, validation.Required),
+		validation.Field(&msg.Path, validation.Required),
+	)
+}
+
+func (r *InMemoryRegistry) RegisterService(msg *ServiceInfo) error {
+	var valerr error = r.validateService(msg)
+
+	if valerr != nil {
+		return valerr
 	}
 
 	utils.MakeUrlPathValid(&msg.Path)
@@ -70,8 +82,8 @@ func (r *InMemoryRegistry) RegisterService(msg ServiceInfo) error {
 	defer r.mutex.Unlock()
 
 	if !pathExist {
-		r.PathTable[msg.Path] = []*ServiceInfo{&msg}
-		r.ServiceIdTable[msg.ServiceId] = &msg
+		r.PathTable[msg.Path] = []*ServiceInfo{msg}
+		r.ServiceIdTable[msg.ServiceId] = msg
 		r.SetServicePathRegex()
 		return nil
 	}
@@ -79,8 +91,8 @@ func (r *InMemoryRegistry) RegisterService(msg ServiceInfo) error {
 	service, serviceIdExist := r.ServiceIdTable[msg.ServiceId]
 
 	if !serviceIdExist {
-		r.PathTable[msg.Path] = append(r.PathTable[msg.Path], &msg)
-		r.ServiceIdTable[msg.ServiceId] = &msg
+		r.PathTable[msg.Path] = append(r.PathTable[msg.Path], msg)
+		r.ServiceIdTable[msg.ServiceId] = msg
 		return nil
 	}
 

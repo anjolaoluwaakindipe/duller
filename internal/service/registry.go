@@ -8,7 +8,7 @@ import (
 type Registry interface {
 	// Takes in a specific RegisterServiceMessage an stores that service. This will update a service
 	// if the path and service name already exists.
-	RegisterService(msg ServiceInfo) error
+	RegisterService(msg *ServiceInfo) error
 	// GetServiceById takes in an ID  and returns its corresponding service.
 	GetServiceById(serviceId string) (*ServiceInfo, error)
 	// GetServiceByPath takes in a path returns all services associated with that given path.
