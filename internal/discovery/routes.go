@@ -26,10 +26,12 @@ func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Reques
 		err := json.NewDecoder(r.Body).Decode(&message)
 		if err != nil {
 			wr.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(wr).Encode(err)
 		}
 
-		if err := rt.registry.RegisterService(&service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}); err != nil {
-			wr.WriteHeader(http.StatusInternalServerError)
+		if err := rt.balancer.AddService(&service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}); err != nil {
+			wr.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(wr).Encode(err)
 		}
 	}
 }
