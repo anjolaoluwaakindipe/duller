@@ -2,6 +2,8 @@ package discovery
 
 import (
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"net/http"
 	"strings"
 
@@ -30,9 +32,15 @@ func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Reques
 		}
 
 		if err := rt.balancer.AddService(&service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}); err != nil {
-			wr.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(wr).Encode(err)
+			http.Error(wr, err.Error(), http.StatusBadRequest)
 		}
+
+		services, err := json.Marshal(rt.registry.GetServices())
+		if err != nil {
+			return
+		}
+
+		rt.hub.broadcaster <- services
 	}
 }
 
@@ -65,6 +73,15 @@ func (rt *MuxRouter) GetServiceMessage() func(wr http.ResponseWriter, r *http.Re
 // ShowServices renders a page where all services can be seen
 func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFiles("./templates/services.html")
+		if err != nil {
+			wr.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		services := rt.registry.GetServices()
+
+		tmpl.Execute(wr, services)
 	}
 }
 
@@ -81,14 +98,16 @@ func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Reque
 
 func (rt *MuxRouter) SetupRoutes() http.Handler {
 	router := mux.NewRouter()
-	router.HandleFunc("/services", rt.ShowServices()).Methods("GET")
+	router.HandleFunc("/", rt.ShowServices()).Methods("GET")
 	router.HandleFunc("/heartbeat", rt.SendHeartBeat()).Methods("POST")
 	router.HandleFunc("/get-service/{path}", rt.GetServiceMessage())
-
+	router.HandleFunc("/services-socket", rt.ServicesSocket())
+	fmt.Println("hello")
 	return router
 }
 
 type Router interface {
+	// SetupRoutes returns a handler of already connected routes
 	SetupRoutes() http.Handler
 }
 

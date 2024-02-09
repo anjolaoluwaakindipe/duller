@@ -40,11 +40,17 @@ func root(args []string) error {
 			if err := subCmd.Run(); err != nil {
 				return err
 			}
+
+			return nil
 		}
 	}
 
 	for _, subCmd := range subCmds {
 		subCmd.UsageInfo()
+	}
+
+	if len(os.Args) < 2 || os.Args[1] == "-h" || os.Args[1] == "--help" {
+		return nil
 	}
 
 	return fmt.Errorf("Unknown subcommand")

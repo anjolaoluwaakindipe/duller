@@ -175,6 +175,10 @@ func (r *InMemoryRegistry) GetServiceById(serviceId string) (*ServiceInfo, error
 func (r *InMemoryRegistry) GetServices() []*ServiceInfo {
 	services := make([]*ServiceInfo, 0)
 
+	for _, service := range r.ServiceIdTable {
+		services = append(services, service)
+	}
+
 	return services
 }
 
