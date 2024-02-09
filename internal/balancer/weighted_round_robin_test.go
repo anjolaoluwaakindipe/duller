@@ -78,4 +78,29 @@ func Test_WeightedRoundRobin_GetNextService(t *testing.T) {
 			assert.Equal(t, service.WeightedUse, service_count[service.ServiceId])
 		}
 	})
+
+	t.Run("SHOULD reset all other services except one WHEN after a weighted cycle of all the service is completed", func(t *testing.T) {
+		registry, stubServices := stubFactory()
+		loadBalancer := balancer.NewWeightedRoundRobinLoadBalancer(registry)
+		services := make([]*service.ServiceInfo, 0)
+
+		for i := 0; i < 10; i++ {
+			service, err := loadBalancer.GetNextService("/path1")
+			assert.Nil(t, err)
+			services = append(services, service)
+		}
+
+		resetService, err := loadBalancer.GetNextService("/path1")
+
+		assert.Nil(t, err)
+		assert.Equal(t, 1, resetService.CurrentUse)
+
+		for _, service := range stubServices {
+			if service.ServiceId == resetService.ServiceId {
+				continue
+			}
+
+			assert.Equal(t, 0, service.CurrentUse)
+		}
+	})
 }
