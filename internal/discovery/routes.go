@@ -73,7 +73,11 @@ func (rt *MuxRouter) GetServiceMessage() func(wr http.ResponseWriter, r *http.Re
 // ShowServices renders a page where all services can be seen
 func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
-		tmpl, err := template.ParseFiles("./templates/services.html")
+		files := []string{
+			"./templates/layout.tmpl",
+			"./templates/services.tmpl",
+		}
+		tmpl, err := template.ParseFiles(files...)
 		if err != nil {
 			wr.WriteHeader(http.StatusInternalServerError)
 			return
@@ -81,7 +85,13 @@ func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request
 
 		services := rt.registry.GetServices()
 
-		tmpl.Execute(wr, services)
+		services = append(services, &service.ServiceInfo{Path: "/hello", ServiceId: "service1", IP: "localhost", Port: "9999", IsHealthy: true})
+		services = append(services, &service.ServiceInfo{Path: "/bye", ServiceId: "service2", IP: "localhost", Port: "5555"})
+
+		tmplData := struct{ Services []*service.ServiceInfo }{
+			Services: services,
+		}
+		tmpl.Execute(wr, tmplData)
 	}
 }
 

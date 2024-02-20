@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Duller</title>
+  </head>
+  <body>
+    <header>
+      <!-- Header content -->
+    </header>
+    <nav>
+      <!-- Navigation menu -->
+    </nav>
+    <main>
+      <!-- Dynamic content will be inserted here -->
+      {{template "content" .}}
+    </main>
+    <footer>
+      <!-- Footer content -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{{ define "content" }}
+<h1>Hello</h1>
+<section>
+  {{range .Services}}
+  <h1>ID: {{.ServiceId}}</h1>
+  <h3>Path: {{.Path}}</h3>
+  <h3>IP: {{.IP}}</h3>
+  <h3>Port: {{.Port}}</h3>
+  <h3>IsHealthy: {{.IsHealthy}}</h3>
+  {{end}}
+</section>
+{{ end }}
