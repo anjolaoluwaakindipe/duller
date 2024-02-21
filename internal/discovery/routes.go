@@ -74,8 +74,8 @@ func (rt *MuxRouter) GetServiceMessage() func(wr http.ResponseWriter, r *http.Re
 func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
 		files := []string{
-			"./templates/layout.tmpl",
-			"./templates/services.tmpl",
+			"./templates/layout.html",
+			"./templates/services.html",
 		}
 		tmpl, err := template.ParseFiles(files...)
 		if err != nil {
@@ -106,12 +106,20 @@ func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Reque
 	}
 }
 
+func (rt *MuxRouter) GetStaticFiles() func(wr http.ResponseWriter, r *http.Request) {
+	return func(wr http.ResponseWriter, r *http.Request) {
+		wr.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(wr, r)
+	}
+}
+
 func (rt *MuxRouter) SetupRoutes() http.Handler {
 	router := mux.NewRouter()
 	router.HandleFunc("/", rt.ShowServices()).Methods("GET")
 	router.HandleFunc("/heartbeat", rt.SendHeartBeat()).Methods("POST")
 	router.HandleFunc("/get-service/{path}", rt.GetServiceMessage())
 	router.HandleFunc("/services-socket", rt.ServicesSocket())
+	router.PathPrefix("/static/").HandlerFunc(rt.GetStaticFiles())
 	fmt.Println("hello")
 	return router
 }
