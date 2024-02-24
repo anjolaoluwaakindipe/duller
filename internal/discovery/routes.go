@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
@@ -17,7 +18,7 @@ import (
 type MuxRouter struct {
 	balancer balancer.LoadBalancer
 	registry service.Registry
-	upgrader websocket.Upgrader
+	upgrader *websocket.Upgrader
 	hub      *hub
 }
 
@@ -30,17 +31,17 @@ func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Reques
 			wr.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(wr).Encode(err)
 		}
-
-		if err := rt.balancer.AddService(&service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}); err != nil {
+		newService := &service.ServiceInfo{ServiceId: message.ServiceId, Path: message.Path, Port: message.Port, IP: message.Port}
+		if err := rt.balancer.AddService(newService); err != nil {
 			http.Error(wr, err.Error(), http.StatusBadRequest)
 		}
 
-		services, err := json.Marshal(rt.registry.GetServices())
+		service, err := json.Marshal(newService)
 		if err != nil {
 			return
 		}
 
-		rt.hub.broadcaster <- services
+		rt.hub.broadcaster <- service
 	}
 }
 
@@ -87,6 +88,7 @@ func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request
 
 		services = append(services, &service.ServiceInfo{Path: "/hello", ServiceId: "service1", IP: "localhost", Port: "9999", IsHealthy: true})
 		services = append(services, &service.ServiceInfo{Path: "/bye", ServiceId: "service2", IP: "localhost", Port: "5555"})
+		services = append(services, &service.ServiceInfo{Path: "/bye2", ServiceId: "service3", IP: "localhost", Port: "2222"})
 
 		tmplData := struct{ Services []*service.ServiceInfo }{
 			Services: services,
@@ -97,12 +99,19 @@ func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request
 
 func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
-		conn, _ := rt.upgrader.Upgrade(wr, r, nil)
+		conn, err := rt.upgrader.Upgrade(wr, r, nil)
+		if err != nil {
+			// Handle upgrade error
+			fmt.Println("Error upgrading to WebSocket:", err)
+			return
+		}
 
-		newClient := newSocketClient(*rt.hub, conn)
-		newClient.hub.register <- &newClient
+		defer conn.Close()
 
-		go newClient.readPipe()
+		newClient := newSocketClient(rt.hub, conn, WithWriteWaitTime(10*time.Second))
+		rt.hub.register <- &newClient
+
+		newClient.readPipe()
 	}
 }
 
@@ -120,7 +129,6 @@ func (rt *MuxRouter) SetupRoutes() http.Handler {
 	router.HandleFunc("/get-service/{path}", rt.GetServiceMessage())
 	router.HandleFunc("/services-socket", rt.ServicesSocket())
 	router.PathPrefix("/static/").HandlerFunc(rt.GetStaticFiles())
-	fmt.Println("hello")
 	return router
 }
 
@@ -135,7 +143,9 @@ func NewMuxRouter(balancer balancer.LoadBalancer, registry service.Registry) Rou
 	h := newHub()
 	go h.run()
 	return &MuxRouter{
-		balancer: balancer, registry: registry, upgrader: websocket.Upgrader{
+		balancer: balancer,
+		registry: registry,
+		upgrader: &websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		},

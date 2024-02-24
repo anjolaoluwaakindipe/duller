@@ -1,12 +1,23 @@
 {{ define "content" }}
-<h1>Hello</h1>
-<section>
+<h1 class="text-xl font-bold mb-8">All Services</h1>
+<section class="p-4 bg-gray-100 w-full space-y-10 flex flex-col">
   {{range .Services}}
-  <h1>ID: {{.ServiceId}}</h1>
-  <h3>Path: {{.Path}}</h3>
-  <h3>IP: {{.IP}}</h3>
-  <h3>Port: {{.Port}}</h3>
-  <h3>IsHealthy: {{.IsHealthy}}</h3>
+  <div class="bg-gray-50 rounded-md shadow-black p-4 space-y-2 w-full">
+    <h1 class="text-lg font-semibold">ID: {{.ServiceId}}</h1>
+    <div class="flex flex-col md:flex-row w-full justify-between">
+      <h3>IP: {{.IP}}</h3>
+      <h3>Port: {{.Port}}</h3>
+    </div>
+    <h3 class="text-sm">Path: {{.Path}}</h3>
+    <div class="flex space-x-3 items-center">
+      <h3 class="">IsHealthy:</h3>
+      {{if .IsHealthy}}
+      <div class="w-3 h-3 rounded-full bg-green-500"></div>
+      {{else }}
+      <div class="w-3 h-3 rounded-full bg-red-500"></div>
+      {{end}}
+    </div>
+  </div>
   {{end}}
 </section>
 <script src="/static/js/services.js"></script>

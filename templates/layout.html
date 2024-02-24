@@ -2,6 +2,9 @@
 <html>
   <head>
     <title>Duller</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/css/tw.css" />
   </head>
   <body>
     <header>
@@ -10,9 +13,11 @@
     <nav>
       <!-- Navigation menu -->
     </nav>
-    <main>
-      <!-- Dynamic content will be inserted here -->
-      {{template "content" .}}
+    <main class="min-h-screen w-full px-5 md:px-10 py-10">
+      <div class="max-w-5xl mx-auto">
+        <!-- Dynamic content will be inserted here -->
+        {{template "content" .}}
+      </div>
     </main>
     <footer>
       <!-- Footer content -->
