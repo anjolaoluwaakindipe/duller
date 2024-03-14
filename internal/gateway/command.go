@@ -30,11 +30,11 @@ func (gc *GateCommand) Init(args []string) error {
 		fmt.Printf("\n\n")
 	}
 	gc.fs.DurationVar(&gc.gatewayHearbeatInterval, "rheartbeat", utils.HEARTBEAT_INTERVAL, "The interval of heartbeats expected.")
-	gc.discoveryServicePath = *gc.fs.String("dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path for proxying users.")
+	gc.fs.StringVar(&gc.discoveryServicePath, "dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path for proxying users.")
 	gc.fs.DurationVar(&gc.gatewayGracefullWait, "gwait", utils.GATEWAY_GRACEFULL_WAIT, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
-	gc.gatewayPort = *gc.fs.String("gport", utils.GATEWAY_PORT, "The PORT number the gateway should run on.")
-	gc.discoveryPort = *gc.fs.String("dport", utils.REGISTRY_PORT, "The PORT number the discovery server is running on.")
-	gc.discoveryHost = *gc.fs.String("dhost", utils.REGISTRY_HOST, "The IP Address/Host of the discovery server.")
+	gc.fs.StringVar(&gc.gatewayPort, "gport", utils.GATEWAY_PORT, "The PORT number the gateway should run on.")
+	gc.fs.StringVar(&gc.discoveryPort, "dport", utils.REGISTRY_PORT, "The PORT number the discovery server is running on.")
+	gc.fs.StringVar(&gc.discoveryHost, "dhost", utils.REGISTRY_HOST, "The IP Address/Host of the discovery server.")
 	return gc.fs.Parse(args)
 }
 

@@ -1,11 +1,15 @@
-client_file := "cmd/client/main.go"
+client_file := "./cmd/client/main.go"
 
-discovery_file := "./cmd/discovery/main.go"
+client_air_file := "./cmd/client/.air.toml"
 
-dev:client
+discovery_file := "./cmd/duller/main.go"
 
-client:
-	go run $(client_file)
+discovery_air_file := "./cmd/duller/.air.toml"
 
-disc:
-	go run $(discovery_file)
+DFLAG = ""
+
+dev-client:
+	cd ./cmd/client/ && air
+
+dev-disc:
+	cd ./cmd/duller/ && air disc $(DFLAG)

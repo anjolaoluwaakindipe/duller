@@ -35,9 +35,9 @@ func (dc *DiscCommand) Init(args []string) error {
 		dc.fs.PrintDefaults()
 		fmt.Printf("\n\n")
 	}
-	dc.discoveryPort = *dc.fs.String("dport", utils.REGISTRY_PORT, "The PORT number the discovery should run on")
-	dc.discoveryHost = *dc.fs.String("dhost", utils.REGISTRY_HOST, "The Host for the discovery server")
-	dc.discoveryServicePath = *dc.fs.String("dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path the discoveryService will use to proxy requests to corresponding services")
+	dc.fs.StringVar(&dc.discoveryPort, "dport", utils.REGISTRY_PORT, "The PORT number the discovery should run on")
+	dc.fs.StringVar(&dc.discoveryHost, "dhost", utils.REGISTRY_HOST, "The Host for the discovery server")
+	dc.fs.StringVar(&dc.discoveryServicePath, "dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path the discoveryService will use to proxy requests to corresponding services")
 	dc.fs.DurationVar(&dc.discoveryHeartbeatInterval, "rheartbeat", utils.HEARTBEAT_INTERVAL, "The interval of heartbeats expected")
 	return dc.fs.Parse(args)
 }
@@ -51,7 +51,7 @@ func (dc *DiscCommand) Run() error {
 	serviceRegistry := service.InitInMemoryRegistry(utils.NewClock())
 	loadBalancer := balancer.NewRoundRobinLoadBalancer(serviceRegistry)
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	return InitRegistryServer(loadBalancer, RegistrySettings{
 		REGISTRY_HOST:      dc.discoveryHost,

@@ -1,0 +1,47 @@
+package tmpl
+
+type Service struct {
+	IP        string
+	Port      string
+	ServiceId string
+	Path      string
+	IsHealthy bool
+}
+
+templ Services(registeredService []Service) {
+	<div hx-ext="ws" ws-connect="/services-socket">
+		<h1 class="text-xl font-bold mb-8">All Services</h1>
+		@ServiceListComponent(registeredService)
+	</div>
+}
+
+templ ServiceListComponent(registeredService []Service) {
+	<section id="services" class="p-4 bg-gray-100 w-full space-y-10 flex flex-col">
+		if len(registeredService) == 0 {
+			<h1>No services available in registry</h1>
+		} else {
+			for _, service := range registeredService {
+				@ServiceComponent(service)
+			}
+		}
+	</section>
+}
+
+templ ServiceComponent(service Service) {
+	<div class="bg-gray-50 rounded-md shadow-black p-4 space-y-2 w-full">
+		<h1 class="text-lg font-semibold">ID: { service.ServiceId }</h1>
+		<div class="flex flex-col md:flex-row w-full justify-between">
+			<h3>IP: { service.IP }</h3>
+			<h3>Port: { service.Port }</h3>
+		</div>
+		<h3 class="text-sm">Path: { service.Path }</h3>
+		<div class="flex space-x-3 items-center">
+			<h3 class="">IsHealthy:</h3>
+			if service.IsHealthy {
+				<div class="w-3 h-3 rounded-full bg-green-500"></div>
+			} else {
+				<div class="w-3 h-3 rounded-full bg-red-500"></div>
+			}
+		</div>
+	</div>
+}

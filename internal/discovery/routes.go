@@ -1,15 +1,17 @@
 package discovery
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
+	"github.com/anjolaoluwaakindipe/duller/internal/tmpl"
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -36,12 +38,19 @@ func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Reques
 			http.Error(wr, err.Error(), http.StatusBadRequest)
 		}
 
-		service, err := json.Marshal(newService)
+		updatedServices := rt.registry.GetServices()
+		listComponent := make([]tmpl.Service, 0)
+		for _, updatedService := range updatedServices {
+			listComponent = append(listComponent, tmpl.Service{Port: updatedService.Port, Path: updatedService.Path, ServiceId: updatedService.ServiceId, IP: updatedService.IP, IsHealthy: updatedService.IsHealthy})
+		}
+		buffer := new(bytes.Buffer)
+		comp := tmpl.ServiceListComponent(listComponent)
+		err = comp.Render(context.Background(), buffer)
 		if err != nil {
-			return
+			http.Error(wr, err.Error(), http.StatusInternalServerError)
 		}
 
-		rt.hub.broadcaster <- service
+		rt.hub.broadcaster <- buffer.Bytes()
 	}
 }
 
@@ -74,26 +83,18 @@ func (rt *MuxRouter) GetServiceMessage() func(wr http.ResponseWriter, r *http.Re
 // ShowServices renders a page where all services can be seen
 func (rt *MuxRouter) ShowServices() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
-		files := []string{
-			"./templates/layout.html",
-			"./templates/services.html",
-		}
-		tmpl, err := template.ParseFiles(files...)
-		if err != nil {
-			wr.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
 		services := rt.registry.GetServices()
 
-		services = append(services, &service.ServiceInfo{Path: "/hello", ServiceId: "service1", IP: "localhost", Port: "9999", IsHealthy: true})
-		services = append(services, &service.ServiceInfo{Path: "/bye", ServiceId: "service2", IP: "localhost", Port: "5555"})
-		services = append(services, &service.ServiceInfo{Path: "/bye2", ServiceId: "service3", IP: "localhost", Port: "2222"})
+		serviceVal := make([]tmpl.Service, 0)
 
-		tmplData := struct{ Services []*service.ServiceInfo }{
-			Services: services,
+		for _, val := range services {
+			newSrvComp := tmpl.Service{Port: val.Port, Path: val.Path, IsHealthy: val.IsHealthy, IP: val.IP, ServiceId: val.ServiceId}
+			serviceVal = append(serviceVal, newSrvComp)
 		}
-		tmpl.Execute(wr, tmplData)
+
+		page := tmpl.Layout(tmpl.Services(serviceVal))
+
+		page.Render(context.Background(), wr)
 	}
 }
 

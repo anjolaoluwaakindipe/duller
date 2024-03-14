@@ -1,7 +1,5 @@
 package discovery
 
-import "fmt"
-
 type hub struct {
 	socketClients map[*socketClient]bool
 	broadcaster   chan []byte
@@ -23,17 +21,12 @@ func (h *hub) run() {
 		select {
 		case client := <-h.register:
 			h.socketClients[client] = true
-			fmt.Println(len(h.socketClients))
 		case client := <-h.unregister:
 			h.removeClient(client)
-			fmt.Println("client removed")
 		case message := <-h.broadcaster:
-			fmt.Println(string(message))
-			fmt.Println(len(h.socketClients))
 			for client := range h.socketClients {
 				select {
 				case client.send <- message:
-					fmt.Println("sending to clients")
 				default:
 					h.removeClient(client)
 				}
