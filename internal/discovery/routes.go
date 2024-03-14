@@ -15,13 +15,15 @@ import (
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type MuxRouter struct {
-	balancer balancer.LoadBalancer
-	registry service.Registry
-	upgrader *websocket.Upgrader
-	hub      *hub
+	balancer      balancer.LoadBalancer
+	registry      service.Registry
+	upgrader      *websocket.Upgrader
+	hashSecretKey string
+	hub           *hub
 }
 
 func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Request) {
@@ -138,12 +140,30 @@ type Router interface {
 	SetupRoutes() http.Handler
 }
 
+func WithSecretKey(key string) MuxRouterOptions {
+	return func(router *MuxRouter) error {
+		if len(strings.Trim(key)) == 0 {
+			return nil
+		}
+
+		bytes, err := bcrypt.GenerateFromPassword([]byte(key), 10)
+		if err != nil {
+			return err
+		}
+
+		router.hashSecretKey = string(bytes)
+		return nil
+	}
+}
+
+type MuxRouterOptions func(*MuxRouter) error
+
 // New MuxRouter instantiates a MuxRouter with all the necessary handleFuncs utilizing the
 // service registry. The MuxRouter implements the Router interface for
-func NewMuxRouter(balancer balancer.LoadBalancer, registry service.Registry) Router {
+func NewMuxRouter(balancer balancer.LoadBalancer, registry service.Registry, opts ...MuxRouterOptions) (Router, error) {
 	h := newHub()
 	go h.run()
-	return &MuxRouter{
+	router := &MuxRouter{
 		balancer: balancer,
 		registry: registry,
 		upgrader: &websocket.Upgrader{
@@ -152,4 +172,13 @@ func NewMuxRouter(balancer balancer.LoadBalancer, registry service.Registry) Rou
 		},
 		hub: &h,
 	}
+
+	for _, opt := range opts {
+		err := opt(router)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return router, nil
 }

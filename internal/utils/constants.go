@@ -12,4 +12,5 @@ const (
 	GATEWAY_PORT             = "5923"
 	GATEWAY_GRACEFULL_WAIT   = 15 * time.Second
 	HEARTBEAT_INTERVAL       = 15 * time.Second
+	DISCOVERY_KEY            = ""
 )

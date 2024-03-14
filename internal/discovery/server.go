@@ -13,20 +13,18 @@ import (
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
 )
 
-// RegistrySettings holds configuration for the Registry Server
-type RegistrySettings struct {
-	REGISTRY_HOST      string
-	REGISTRY_PORT      string
-	REGISTRY_TYPE      string
+// DiscoveryConfig holds configuration for the Registry Server
+type DiscoveryConfig struct {
+	DISCOVERY_HOST     string
+	DISCOVERY_PORT     string
+	DISCOVERY_KEY      string
 	HEARTBEAT_INTERVAL time.Duration
 }
 
 // InitRegistryServer initiates a TCP server and accepts connections for the registry
-func InitRegistryServer(balancer balancer.LoadBalancer, rs RegistrySettings, registry service.Registry, ctx context.Context, routerCreator func(balancer.LoadBalancer, service.Registry) Router) error {
-	router := routerCreator(balancer, registry)
-
+func InitRegistryServer(dc DiscoveryConfig, ctx context.Context, router Router) error {
 	server := http.Server{
-		Addr:         ":" + rs.REGISTRY_PORT,
+		Addr:         ":" + dc.DISCOVERY_PORT,
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
@@ -35,7 +33,7 @@ func InitRegistryServer(balancer balancer.LoadBalancer, rs RegistrySettings, reg
 
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
-		slog.Info(fmt.Sprintf("Starting Service Discovery Server on port %v... \n", rs.REGISTRY_PORT))
+		slog.Info(fmt.Sprintf("Starting Service Discovery Server on port %v... \n", dc.DISCOVERY_PORT))
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			slog.Error("Error starting Service Discovery Server: %v", err)
 		}
