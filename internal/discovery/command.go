@@ -40,7 +40,6 @@ func (dc *DiscCommand) Init(args []string) error {
 	dc.fs.StringVar(&dc.discoveryPort, "dport", utils.REGISTRY_PORT, "The PORT number the discovery should run on")
 	dc.fs.StringVar(&dc.discoveryHost, "dhost", utils.REGISTRY_HOST, "The Host for the discovery server")
 	dc.fs.StringVar(&dc.discoveryServicePath, "dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path the discoveryService will use to proxy requests to corresponding services")
-	dc.fs.StringVar(&dc.discoveryServicePath, "dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path the discoveryService will use to proxy requests to corresponding services")
 	dc.fs.DurationVar(&dc.discoveryHeartbeatInterval, "rheartbeat", utils.HEARTBEAT_INTERVAL, "The interval of heartbeats expected")
 	return dc.fs.Parse(args)
 }

@@ -8,9 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
-	"github.com/anjolaoluwaakindipe/duller/internal/service"
 )
 
 // DiscoveryConfig holds configuration for the Registry Server
