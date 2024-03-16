@@ -13,7 +13,7 @@ dev-client:
 	cd ./cmd/client/ && air
 
 dev-disc:
-	cd ./cmd/duller/ && air disc $(DFLAGS)
+	air -c "./cmd/duller/.air.toml" disc $(DFLAGS)
 
 dev-gate:
-	cd ./cmd/duller/ && air gate $(GFLAGS)
+	air -c "./cmd/duller/.air.toml" gate $(GFLAGS)

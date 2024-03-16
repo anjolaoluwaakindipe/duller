@@ -1,16 +1,16 @@
-root = "../../"
+root = "."
 testdata_dir = "testdata"
-tmp_dir = "tmp"
+tmp_dir = "./cmd/duller/tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/main"
-  cmd = " npx tailwindcss -i ../../static/css/main.css -o ../../static/css/tw.css && templ generate path=\"../../\" && go build -o ./tmp/main ."
+  bin = "./cmd/duller/tmp/main"
+  cmd = "npx tailwindcss -i ./static/css/main.css -o ./static/css/tw.css -c ./tailwind.config.js && templ generate && go build -o ./cmd/duller/tmp/main ./cmd/duller/main.go"
   post_cmd = ["pkill main"]
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []
-  exclude_regex = ["_test.go"]
+  exclude_regex = ["_test.go", ".*_templ.go"]
   exclude_unchanged = false
   follow_symlink = false
   full_bin = ""
@@ -24,7 +24,7 @@ tmp_dir = "tmp"
   rerun = false
   rerun_delay = 500
   send_interrupt = true
-  stop_on_error = false
+  stop_on_error = true
 
 [color]
   app = ""

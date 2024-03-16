@@ -29,7 +29,7 @@ templ ServiceListComponent(registeredService []Service) {
 
 templ ServiceComponent(service Service) {
 	<div class="bg-gray-50 rounded-md shadow-black p-4 space-y-2 w-full">
-		<h1 class="text-lg font-semibold">ID: { service.ServiceId }</h1>
+		<h1 class="text-lg font-semibold bg-black">ID: { service.ServiceId }</h1>
 		<div class="flex flex-col md:flex-row w-full justify-between">
 			<h3>IP: { service.IP }</h3>
 			<h3>Port: { service.Port }</h3>

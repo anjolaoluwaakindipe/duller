@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -168,7 +169,7 @@ func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Reque
 		conn, err := rt.upgrader.Upgrade(wr, r, nil)
 		if err != nil {
 			// Handle upgrade error
-			fmt.Println("Error upgrading to WebSocket:", err)
+			slog.Error(fmt.Sprint("Error upgrading to WebSocket: \n", err))
 			return
 		}
 
@@ -181,7 +182,7 @@ func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (rt *MuxRouter) getStaticFiles() func(wr http.ResponseWriter, r *http.Request) {
+func (rt *MuxRouter) GetStaticFiles() func(wr http.ResponseWriter, r *http.Request) {
 	return func(wr http.ResponseWriter, r *http.Request) {
 		wr.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(wr, r)
@@ -194,7 +195,7 @@ func (rt *MuxRouter) SetupRoutes() http.Handler {
 	router.HandleFunc("/heartbeat", rt.SendHeartBeat()).Methods("POST")
 	router.HandleFunc("/get-service/{path}", rt.GetServiceMessage())
 	router.HandleFunc("/services-socket", rt.ServicesSocket())
-	router.PathPrefix("/static/").HandlerFunc(rt.getStaticFiles())
+	router.PathPrefix("/static/").HandlerFunc(rt.GetStaticFiles())
 	return router
 }
 
