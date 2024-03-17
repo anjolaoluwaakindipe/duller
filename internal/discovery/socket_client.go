@@ -34,7 +34,7 @@ func newSocketClient(h *hub, conn *websocket.Conn, opts ...socketClientOpts) soc
 // new socketClients
 type socketClientOpts func(socketClient *socketClient)
 
-// WithWriteWaitTimes is a socketClientOpts that hels set the
+// WithWriteWaitTimes is a socketClient option that sets the
 // writeWaitTime for a socketClient upon creation
 func WithWriteWaitTime(duration time.Duration) socketClientOpts {
 	return func(socketClient *socketClient) {
@@ -58,7 +58,6 @@ func (sc *socketClient) readPipe() {
 		case message, ok := <-sc.send:
 			sc.conn.SetWriteDeadline(time.Now().Add(sc.writeWaitTime))
 			if !ok {
-				// The hub closed the channel.
 				sc.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}

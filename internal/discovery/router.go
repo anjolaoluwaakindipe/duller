@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
+	"github.com/anjolaoluwaakindipe/duller/internal/registry"
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
 	"github.com/anjolaoluwaakindipe/duller/internal/tmpl"
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
@@ -21,7 +22,7 @@ import (
 
 type MuxRouter struct {
 	balancer      balancer.LoadBalancer
-	registry      service.Registry
+	registry      registry.Registry
 	upgrader      *websocket.Upgrader
 	hashSecretKey string
 	hub           *hub
@@ -226,7 +227,7 @@ type MuxRouterOpt func(*MuxRouter) error
 
 // New MuxRouter instantiates a MuxRouter with all the necessary handleFuncs utilizing the
 // service registry. The MuxRouter implements the Router interface for
-func NewMuxRouter(balancer balancer.LoadBalancer, registry service.Registry, opts ...MuxRouterOpt) (Router, error) {
+func NewMuxRouter(balancer balancer.LoadBalancer, registry registry.Registry, opts ...MuxRouterOpt) (Router, error) {
 	h := newHub()
 	go h.run()
 	router := &MuxRouter{

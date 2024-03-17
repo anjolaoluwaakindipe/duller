@@ -3,13 +3,14 @@ package balancer
 import (
 	"sync"
 
+	"github.com/anjolaoluwaakindipe/duller/internal/registry"
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
 	"github.com/invopop/validation"
 )
 
 type WeightedRoundRobin struct {
-	registry service.Registry
-	mutex    sync.Mutex
+	reg   registry.Registry
+	mutex sync.Mutex
 }
 
 func (wrb *WeightedRoundRobin) validateService(service *service.ServiceInfo) error {
@@ -26,7 +27,7 @@ func (wrb *WeightedRoundRobin) AddService(service *service.ServiceInfo) error {
 		return valErr
 	}
 
-	if err := wrb.registry.RegisterService(service); err != nil {
+	if err := wrb.reg.RegisterService(service); err != nil {
 		return err
 	}
 	return nil
@@ -35,7 +36,7 @@ func (wrb *WeightedRoundRobin) AddService(service *service.ServiceInfo) error {
 func (wrb *WeightedRoundRobin) RemoveService(service *service.ServiceInfo) error {
 	wrb.mutex.Lock()
 	defer wrb.mutex.Unlock()
-	if err := wrb.registry.DeregisterService(service.Path, service.ServiceId); err != nil {
+	if err := wrb.reg.DeregisterService(service.Path, service.ServiceId); err != nil {
 		return err
 	}
 	return nil
@@ -44,7 +45,7 @@ func (wrb *WeightedRoundRobin) RemoveService(service *service.ServiceInfo) error
 func (wrb *WeightedRoundRobin) GetNextService(path string) (*service.ServiceInfo, error) {
 	wrb.mutex.Lock()
 	defer wrb.mutex.Unlock()
-	services, err := wrb.registry.GetServicesByPath(path)
+	services, err := wrb.reg.GetServicesByPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +58,12 @@ func (wrb *WeightedRoundRobin) GetNextService(path string) (*service.ServiceInfo
 
 	for i := range services {
 		service := services[i]
-		isFull, err := wrb.registry.IsServiceWeightFull(service.ServiceId)
+		isFull, err := wrb.reg.IsServiceWeightFull(service.ServiceId)
 		if err != nil {
 			return nil, err
 		}
 		if !isFull {
-			wrb.registry.UpdateServiceCurrentUse(service.ServiceId)
+			wrb.reg.UpdateServiceCurrentUse(service.ServiceId)
 			selectedService = service
 			break
 		}
@@ -71,16 +72,16 @@ func (wrb *WeightedRoundRobin) GetNextService(path string) (*service.ServiceInfo
 	if selectedService == nil {
 		for i := range services {
 			service := services[i]
-			wrb.registry.ResetCurrentUse(service.ServiceId)
+			wrb.reg.ResetCurrentUse(service.ServiceId)
 		}
 		firstService := services[0]
 		selectedService = firstService
-		wrb.registry.UpdateServiceCurrentUse(firstService.ServiceId)
+		wrb.reg.UpdateServiceCurrentUse(firstService.ServiceId)
 	}
 
 	return selectedService, nil
 }
 
-func NewWeightedRoundRobinLoadBalancer(registry service.Registry) LoadBalancer {
-	return &WeightedRoundRobin{registry: registry}
+func NewWeightedRoundRobinLoadBalancer(reg registry.Registry) LoadBalancer {
+	return &WeightedRoundRobin{reg: reg}
 }

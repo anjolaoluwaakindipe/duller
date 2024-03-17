@@ -3,19 +3,20 @@ package balancer
 import (
 	"sync"
 
+	"github.com/anjolaoluwaakindipe/duller/internal/registry"
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
 )
 
 type RoundRobin struct {
-	registry service.Registry
-	pathMap  map[string]int
-	mutex    sync.Mutex
+	reg     registry.Registry
+	pathMap map[string]int
+	mutex   sync.Mutex
 }
 
 func (lb *RoundRobin) AddService(service *service.ServiceInfo) error {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
-	if err := lb.registry.RegisterService(service); err != nil {
+	if err := lb.reg.RegisterService(service); err != nil {
 		return err
 	}
 	return nil
@@ -24,7 +25,7 @@ func (lb *RoundRobin) AddService(service *service.ServiceInfo) error {
 func (lb *RoundRobin) RemoveService(service *service.ServiceInfo) error {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
-	if err := lb.registry.DeregisterService(service.Path, service.ServiceId); err != nil {
+	if err := lb.reg.DeregisterService(service.Path, service.ServiceId); err != nil {
 		return err
 	}
 	return nil
@@ -33,7 +34,7 @@ func (lb *RoundRobin) RemoveService(service *service.ServiceInfo) error {
 func (lb *RoundRobin) GetNextService(path string) (*service.ServiceInfo, error) {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
-	services, err := lb.registry.GetServicesByPath(path)
+	services, err := lb.reg.GetServicesByPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +54,12 @@ func (lb *RoundRobin) GetNextService(path string) (*service.ServiceInfo, error) 
 	return service, nil
 }
 
-func (lb *RoundRobin) GetRegitry() service.Registry {
+func (lb *RoundRobin) GetRegitry() registry.Registry {
 	lb.mutex.Lock()
 	defer lb.mutex.Unlock()
-	return lb.registry
+	return lb.reg
 }
 
-func NewRoundRobinLoadBalancer(registry service.Registry) LoadBalancer {
-	return &RoundRobin{registry: registry, pathMap: make(map[string]int)}
+func NewRoundRobinLoadBalancer(reg registry.Registry) LoadBalancer {
+	return &RoundRobin{reg: reg, pathMap: make(map[string]int)}
 }

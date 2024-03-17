@@ -17,3 +17,7 @@ dev-disc:
 
 dev-gate:
 	air -c "./cmd/duller/.air.toml" gate $(GFLAGS)
+
+test:
+	go test ./... -v 
+

@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/balancer"
+	"github.com/anjolaoluwaakindipe/duller/internal/registry"
 	"github.com/anjolaoluwaakindipe/duller/internal/service"
 	"github.com/anjolaoluwaakindipe/duller/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-func stubFactory() (registry service.Registry, services []*service.ServiceInfo) {
-	registry = service.InitInMemoryRegistry(utils.NewClock())
+func stubFactory() (reg registry.Registry, services []*service.ServiceInfo) {
+	reg = registry.InitInMemoryRegistry(utils.NewClock())
 
 	services = []*service.ServiceInfo{
 		{
@@ -37,7 +38,7 @@ func stubFactory() (registry service.Registry, services []*service.ServiceInfo) 
 	}
 
 	for i := 0; i < len(services); i++ {
-		registry.RegisterService(services[i])
+		reg.RegisterService(services[i])
 	}
 
 	return

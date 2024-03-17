@@ -33,8 +33,8 @@ func (gc *GateCommand) Init(args []string) error {
 	gc.fs.StringVar(&gc.discoveryServicePath, "dservice_path", utils.DISCOVERY_SERVICE_PATH, "Path for proxying users.")
 	gc.fs.DurationVar(&gc.gatewayGracefullWait, "gwait", utils.GATEWAY_GRACEFULL_WAIT, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
 	gc.fs.StringVar(&gc.gatewayPort, "gport", utils.GATEWAY_PORT, "The PORT number the gateway should run on.")
-	gc.fs.StringVar(&gc.discoveryPort, "dport", utils.REGISTRY_PORT, "The PORT number the discovery server is running on.")
-	gc.fs.StringVar(&gc.discoveryHost, "dhost", utils.REGISTRY_HOST, "The IP Address/Host of the discovery server.")
+	gc.fs.StringVar(&gc.discoveryPort, "dport", utils.DISCOVERY_PORT, "The PORT number the discovery server is running on.")
+	gc.fs.StringVar(&gc.discoveryHost, "dhost", utils.DISCOVERY_HOST, "The IP Address/Host of the discovery server.")
 	return gc.fs.Parse(args)
 }
 
