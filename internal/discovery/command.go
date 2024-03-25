@@ -29,7 +29,7 @@ func (dc *DiscCommand) Name() string {
 }
 
 // Init initializes DiscCommand fields with appropriate flags
-func (dc *DiscCommand) Init(args []string) error {
+func (dc *DiscCommand) Init(args ...string) error {
 	dc.fs.Usage = func() {
 		fmt.Printf("disc usage: %s disc [OPTIONS] argument ...\n", os.Args[0])
 		dc.fs.PrintDefaults()
@@ -43,7 +43,7 @@ func (dc *DiscCommand) Init(args []string) error {
 }
 
 func (dc *DiscCommand) UsageInfo() {
-	dc.Init([]string{})
+	dc.Init()
 	dc.fs.Usage()
 }
 
@@ -53,7 +53,7 @@ func (dc *DiscCommand) Run() error {
 
 	ctx := context.TODO()
 
-	router, err := NewMuxRouter(loadBalancer, serviceRegistry, WithSecretKey(dc.DiscoveryKey))
+	router, err := NewMuxRouter(loadBalancer, serviceRegistry, ctx, WithSecretKey(dc.DiscoveryKey))
 	if err != nil {
 		return err
 	}

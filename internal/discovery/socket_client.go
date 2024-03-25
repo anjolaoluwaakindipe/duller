@@ -1,7 +1,9 @@
 package discovery
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"time"
 
@@ -9,19 +11,33 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// socketClient is a struct object responsible
+type WSConn interface {
+	Close() error
+	// NextWriter returns a writer for the next message to send. The writer's Close method flushes
+	// the complete message to the network.
+	// There can be at most one open writer on a connection. NextWriter closes the previous writer
+	// if the application has not already done so.
+	// All message types (TextMessage, BinaryMessage, CloseMessage, PingMessage and PongMessage) are supported.
+	NextWriter(messageType int) (io.WriteCloser, error)
+	SetWriteDeadline(t time.Time) error
+	// WriteMessage is a helper method for getting a writer using NextWriter,
+	// writing the message and closing the writer.
+	WriteMessage(messageType int, data []byte) error
+}
+
+// SocketClient is a struct object responsible
 // for handling client connections involved in a hub
-type socketClient struct {
+type SocketClient struct {
 	Id            uuid.UUID
-	conn          *websocket.Conn
+	conn          WSConn
 	send          chan []byte
-	hub           *hub
+	hub           Hub
 	writeWaitTime time.Duration
 }
 
-// newSocketClient is a constructor function for a new socketClient
-func newSocketClient(h *hub, conn *websocket.Conn, opts ...socketClientOpts) socketClient {
-	client := socketClient{Id: uuid.New(), hub: h, conn: conn, send: make(chan []byte, 256)}
+// NewSocketClient is a constructor function for a new socketClient
+func NewSocketClient(h Hub, conn WSConn, opts ...socketClientOpts) SocketClient {
+	client := SocketClient{Id: uuid.New(), hub: h, conn: conn, send: make(chan []byte, 256)}
 
 	for _, opt := range opts {
 		opt(&client)
@@ -30,38 +46,47 @@ func newSocketClient(h *hub, conn *websocket.Conn, opts ...socketClientOpts) soc
 	return client
 }
 
+func (sc *SocketClient) Send() chan []byte {
+	return sc.send
+}
+
 // socketClientOpts is an option function for creating
 // new socketClients
-type socketClientOpts func(socketClient *socketClient)
+type socketClientOpts func(socketClient *SocketClient)
 
 // WithWriteWaitTimes is a socketClient option that sets the
 // writeWaitTime for a socketClient upon creation
 func WithWriteWaitTime(duration time.Duration) socketClientOpts {
-	return func(socketClient *socketClient) {
+	return func(socketClient *SocketClient) {
 		socketClient.writeWaitTime = duration
 	}
 }
 
-// readPipe facilitates reading messages broadcasted from the hub and sending
+// ReadPipe facilitates reading messages broadcasted from the hub and sending
 // messages through the websocket connection to the user
-func (sc *socketClient) readPipe() {
+func (sc *SocketClient) ReadPipe(ctx context.Context) {
 	ticker := time.NewTicker(time.Second * 2)
 
 	defer func() {
-		sc.hub.unregister <- sc
+		sc.hub.Unregister() <- sc
 		ticker.Stop()
-		sc.conn.Close()
+		if sc.conn != nil {
+			sc.conn.Close()
+		}
 	}()
 
 	for {
 		select {
 		case message, ok := <-sc.send:
+			if sc.conn == nil {
+				return
+			}
 			sc.conn.SetWriteDeadline(time.Now().Add(sc.writeWaitTime))
+			fmt.Println("hello")
 			if !ok {
 				sc.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-
 			w, err := sc.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				slog.Warn(fmt.Sprintf("Could not establish a text message connection %v", sc.conn))
@@ -86,6 +111,9 @@ func (sc *socketClient) readPipe() {
 				slog.Warn(fmt.Sprintf("Could not ping client with websocket %v", sc.Id))
 				return
 			}
+
+		case <-ctx.Done():
+			return
 		}
 	}
 }

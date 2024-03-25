@@ -23,7 +23,7 @@ func (gc *GateCommand) Name() string {
 	return gc.fs.Name()
 }
 
-func (gc *GateCommand) Init(args []string) error {
+func (gc *GateCommand) Init(args ...string) error {
 	gc.fs.Usage = func() {
 		fmt.Printf("gate usage: %s gate [OPTIONS] argument ...\n", os.Args[0])
 		gc.fs.PrintDefaults()
@@ -39,7 +39,7 @@ func (gc *GateCommand) Init(args []string) error {
 }
 
 func (gc *GateCommand) UsageInfo() {
-	gc.Init([]string{})
+	gc.Init()
 	gc.fs.Usage()
 }
 

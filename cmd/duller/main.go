@@ -12,7 +12,7 @@ import (
 // Runner is an interface for various commandline subsets for duller
 type Runner interface {
 	Name() string
-	Init([]string) error
+	Init(...string) error
 	Run() error
 	UsageInfo()
 }
@@ -33,7 +33,7 @@ func root(args []string) error {
 
 	for _, subCmd := range subCmds {
 		if subCmd.Name() == subCommand {
-			if err := subCmd.Init(args[1:]); err != nil {
+			if err := subCmd.Init(args[1:]...); err != nil {
 				return err
 			}
 

@@ -13,7 +13,7 @@ func Test_Discommand_Init(t *testing.T) {
 	t.Run("Test that default values are used when no flags are passed", func(t *testing.T) {
 		command := discovery.NewDiscCommand()
 
-		err := command.Init([]string{})
+		err := command.Init()
 
 		assert.Nil(t, err)
 
@@ -40,7 +40,7 @@ func Test_Discommand_Init(t *testing.T) {
 
 		command := discovery.NewDiscCommand()
 
-		err := command.Init(args)
+		err := command.Init(args...)
 
 		assert.Nil(t, err)
 

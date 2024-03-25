@@ -4,7 +4,7 @@ import (
 	"flag"
 	"time"
 
-	"github.com/anjolaoluwaakindipe/duller/internal/client"
+	"github.com/anjolaoluwaakindipe/duller/pkg/client"
 )
 
 // defaults for the test client cli
@@ -26,7 +26,7 @@ func main() {
 
 	flag.Parse()
 
-	clientServerSettings := client.ClientServerSettings{
+	clientServerSettings := duller.ClientServerSettings{
 		ClientPort:        *cport,
 		Path:              *gpath,
 		ServerName:        *cname,
@@ -34,5 +34,5 @@ func main() {
 		RegistryLocation:  *dlocation,
 	}
 
-	client.InitClientServer(clientServerSettings)
+	duller.InitClientServer(clientServerSettings)
 }

@@ -25,7 +25,8 @@ type MuxRouter struct {
 	registry      registry.Registry
 	upgrader      *websocket.Upgrader
 	hashSecretKey string
-	hub           *hub
+	ctx           context.Context
+	hub           Hub
 }
 
 func (rt *MuxRouter) isHeartbeatAuthorized(serviceId string, path string, key string) error {
@@ -111,7 +112,7 @@ func (rt *MuxRouter) SendHeartBeat() func(wr http.ResponseWriter, r *http.Reques
 			http.Error(wr, err.Error(), http.StatusInternalServerError)
 		}
 
-		rt.hub.broadcaster <- buffer.Bytes()
+		rt.hub.Broadcaster() <- buffer.Bytes()
 	}
 }
 
@@ -176,10 +177,10 @@ func (rt *MuxRouter) ServicesSocket() func(wr http.ResponseWriter, r *http.Reque
 
 		defer conn.Close()
 
-		newClient := newSocketClient(rt.hub, conn, WithWriteWaitTime(10*time.Second))
-		rt.hub.register <- &newClient
+		newClient := NewSocketClient(rt.hub, conn, WithWriteWaitTime(10*time.Second))
+		rt.hub.Register() <- &newClient
 
-		newClient.readPipe()
+		newClient.ReadPipe(rt.ctx)
 	}
 }
 
@@ -222,14 +223,19 @@ func WithSecretKey(key string) MuxRouterOpt {
 	}
 }
 
+func WithHub(hub Hub) MuxRouterOpt {
+	return func(mr *MuxRouter) error {
+		mr.hub = hub
+		return nil
+	}
+}
+
 // MuxRouterOpt are option functions that setup the mux router struct.
 type MuxRouterOpt func(*MuxRouter) error
 
 // New MuxRouter instantiates a MuxRouter with all the necessary handleFuncs utilizing the
 // service registry. The MuxRouter implements the Router interface for
-func NewMuxRouter(balancer balancer.LoadBalancer, registry registry.Registry, opts ...MuxRouterOpt) (Router, error) {
-	h := newHub()
-	go h.run()
+func NewMuxRouter(balancer balancer.LoadBalancer, registry registry.Registry, ctx context.Context, opts ...MuxRouterOpt) (Router, error) {
 	router := &MuxRouter{
 		balancer: balancer,
 		registry: registry,
@@ -237,7 +243,8 @@ func NewMuxRouter(balancer balancer.LoadBalancer, registry registry.Registry, op
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		},
-		hub: &h,
+		ctx: ctx,
+		hub: NewInMemoryHub(),
 	}
 
 	for _, opt := range opts {
@@ -246,6 +253,8 @@ func NewMuxRouter(balancer balancer.LoadBalancer, registry registry.Registry, op
 			return nil, err
 		}
 	}
+
+	go router.hub.Run(ctx)
 
 	return router, nil
 }
