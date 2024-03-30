@@ -2,12 +2,15 @@ package discovery_test
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/anjolaoluwaakindipe/duller/internal/discovery"
+	"github.com/anjolaoluwaakindipe/duller/internal/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func Test_Hub_Register(t *testing.T) {
@@ -88,17 +91,17 @@ func Test_Hub_Broadcaster(t *testing.T) {
 
 	ctx1, cancel1 = context.WithCancel(context.Background())
 	ctx2 := context.Background()
+	wg1.Add(1)
+	wg2.Add(1)
 
 	go func(client *discovery.SocketClient, wg *sync.WaitGroup, ctx context.Context) {
-		wg.Add(1)
+		defer wg.Done()
 		client.ReadPipe(ctx)
-		wg.Done()
 	}(&client1, &wg1, ctx2)
 
 	go func(ctx context.Context, wg *sync.WaitGroup) {
-		wg.Add(1)
+		defer wg.Done()
 		hub.Run(ctx)
-		wg.Done()
 	}(ctx1, &wg2)
 
 	hub.Broadcaster() <- []byte("hello")
@@ -112,17 +115,51 @@ func Test_Hub_Broadcaster(t *testing.T) {
 	assert.Equal(t, 0, len(inMemoryHub.SocketClients))
 }
 
-// func Test_Hub_Broadcaster_With_WebSocket_Connection(t *testing.T) {
-// 	t.Parallel()
-// 	hub := discovery.NewInMemoryHub()
-// 	client := discovery.NewSocketClient(hub, nil)
-//
-// 	ctx, cancel := context.WithCancel(context.Background())
-//
-// 	go func(ctx context.Context, client *discovery.SocketClient) {
-// 		client.ReadPipe(ctx)
-// 	}(ctx, &client)
-//
-// 	hub.Register() <- &client
-// 	hub.Broadcaster() <- []byte("hello")
-// }
+func Test_Hub_Broadcaster_With_WebSocket_Connection(t *testing.T) {
+	t.Parallel()
+	hub := discovery.NewInMemoryHub()
+	textMessage := 1
+
+	message := []byte("message")
+	mockWs := new(mocks.MockWebSocket)
+	writeCloser := new(mocks.MockWriteCloser)
+	writeCloser.On("Write", message).Return(len(message), nil)
+	writeCloser.On("Close").Return(nil)
+	mockWs.On("SetWriteDeadline", mock.Anything).Return(nil)
+	mockWs.On("NextWriter", textMessage).Return(writeCloser, nil)
+	mockWs.On("Close").Return(nil)
+	socket := discovery.NewSocketClient(hub, mockWs)
+	ctx1, cancel1 := context.WithCancel(context.Background())
+	ctx2, cancel2 := context.WithCancel(context.Background())
+
+	wg := new(sync.WaitGroup)
+	wg.Add(2)
+
+	go func(ctx context.Context, hub discovery.Hub, wg *sync.WaitGroup) {
+		defer wg.Done()
+		hub.Run(ctx)
+		fmt.Println("hub was cancelled")
+	}(ctx2, hub, wg)
+
+	go func(ctx context.Context, client *discovery.SocketClient, wg *sync.WaitGroup) {
+		defer wg.Done()
+		socket.ReadPipe(ctx)
+		fmt.Println("socket client was cancelled")
+	}(ctx1, &socket, wg)
+
+	hub.Register() <- &socket
+	time.Sleep(100 * time.Millisecond)
+	hub.Broadcaster() <- message
+	fmt.Println("hello1")
+
+	time.Sleep(100 * time.Millisecond)
+	cancel1()
+	time.Sleep(100 * time.Millisecond)
+	cancel2()
+
+	wg.Wait()
+	mockWs.AssertExpectations(t)
+	mockWs.AssertExpectations(t)
+	mockWs.AssertNumberOfCalls(t, "NextWriter", 1)
+	writeCloser.AssertNumberOfCalls(t, "Write", 1)
+}

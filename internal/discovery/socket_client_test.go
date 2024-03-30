@@ -36,6 +36,8 @@ func Test_SocketClient_ReadPipe(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		cancel()
 
+		mockWs.AssertExpectations(t)
+		mockWs.AssertExpectations(t)
 		mockWs.AssertNumberOfCalls(t, "NextWriter", 1)
 		writeCloser.AssertNumberOfCalls(t, "Write", 1)
 	})

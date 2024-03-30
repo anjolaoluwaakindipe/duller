@@ -77,12 +77,15 @@ func (sc *SocketClient) ReadPipe(ctx context.Context) {
 
 	for {
 		select {
-		case message, ok := <-sc.send:
+		case <-ctx.Done():
+			fmt.Println("Cancel was called")
+			return
+
+		case message, ok := <-sc.Send():
 			if sc.conn == nil {
 				return
 			}
 			sc.conn.SetWriteDeadline(time.Now().Add(sc.writeWaitTime))
-			fmt.Println("hello")
 			if !ok {
 				sc.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
@@ -95,7 +98,9 @@ func (sc *SocketClient) ReadPipe(ctx context.Context) {
 			w.Write(message)
 
 			n := len(sc.send)
+			fmt.Println("hello")
 			for i := 0; i < n; i++ {
+				fmt.Println("hello2")
 				w.Write([]byte{'\n'})
 				w.Write(<-sc.send)
 			}
@@ -104,6 +109,8 @@ func (sc *SocketClient) ReadPipe(ctx context.Context) {
 				slog.Warn(fmt.Sprintf("Could not close text message connection %v", sc.conn))
 				return
 			}
+			fmt.Println("hello3")
+			fmt.Println(string(message))
 
 		case <-ticker.C:
 			sc.conn.SetWriteDeadline(time.Now().Add(sc.writeWaitTime))
@@ -112,8 +119,6 @@ func (sc *SocketClient) ReadPipe(ctx context.Context) {
 				return
 			}
 
-		case <-ctx.Done():
-			return
 		}
 	}
 }

@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"context"
-	"fmt"
 )
 
 type Hub interface {
@@ -51,7 +50,6 @@ func (h *InMemoryHub) Unregister() chan *SocketClient {
 
 func (h *InMemoryHub) removeClient(client *SocketClient) {
 	delete(h.SocketClients, client)
-	fmt.Println("hello")
 	close(client.send)
 }
 
@@ -65,7 +63,7 @@ func (h *InMemoryHub) Run(ctx context.Context) {
 		case message := <-h.broadcaster:
 			for client := range h.SocketClients {
 				select {
-				case client.send <- message:
+				case client.Send() <- message:
 				default:
 					h.removeClient(client)
 				}
